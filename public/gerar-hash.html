@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gerar hash — Meus Treinos</title>
+<style>
+  :root{ color-scheme: dark; }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; padding:24px 16px 60px; background:#000; color:#f5f5f5;
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;
+    display:flex; justify-content:center;
+  }
+  .wrap{ width:100%; max-width:460px; }
+  h1{ font-size:20px; margin:0 0 4px; }
+  h2{ font-size:14px; margin:26px 0 10px; color:#f5f5f5; }
+  p.sub{ color:#a8a8a8; font-size:13px; margin:0 0 24px; line-height:1.5; }
+  .warn{
+    background:rgba(255,90,31,0.12); border:1px solid rgba(255,90,31,0.3);
+    border-radius:12px; padding:12px 14px; font-size:12.5px; color:#ffb27a; margin-bottom:22px; line-height:1.5;
+  }
+  label{ display:block; font-size:12px; color:#a8a8a8; margin:0 0 6px; }
+  input{
+    width:100%; background:#161616; border:1px solid rgba(255,255,255,0.1); color:#f5f5f5;
+    border-radius:10px; padding:11px 12px; font-size:14px; font-family:inherit; margin-bottom:16px;
+  }
+  input:focus{ outline:none; border-color:#ff5a1f; }
+  .row{ display:flex; gap:10px; }
+  .row > div{ flex:1; }
+  button{
+    width:100%; background:#ff5a1f; color:#0a0a0a; border:none; border-radius:12px;
+    padding:13px; font-size:15px; font-weight:700; font-family:inherit; margin-top:4px;
+  }
+  button:active{ opacity:0.85; }
+  .out-label{ font-size:12px; color:#a8a8a8; margin:22px 0 8px; }
+  textarea{
+    width:100%; min-height:140px; background:#0d0d0d; border:1px solid rgba(255,255,255,0.1);
+    color:#30d158; border-radius:10px; padding:12px; font-size:12.5px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    resize:vertical; white-space:pre;
+  }
+  .copy-btn{ background:#161616; color:#f5f5f5; border:1px solid rgba(255,255,255,0.1); margin-top:8px; }
+  .hint{ font-size:11.5px; color:#7d7d7d; margin-top:6px; line-height:1.5; }
+  .card{
+    background:#111; border:1px solid rgba(255,255,255,0.08); border-radius:14px;
+    padding:14px; margin-bottom:16px;
+  }
+  .file-row{ display:flex; align-items:center; gap:10px; margin-bottom:4px; }
+  .file-btn{
+    width:auto; flex:none; background:#161616; color:#f5f5f5; border:1px solid rgba(255,255,255,0.1);
+    padding:10px 14px; font-size:13px; font-weight:600;
+  }
+  .cache-status{ font-size:12.5px; color:#a8a8a8; line-height:1.5; }
+  .cache-status b{ color:#f5f5f5; }
+  #fileInput{ display:none; }
+  .summary{
+    background:#0d0d0d; border:1px solid rgba(48,209,88,0.35); border-radius:12px;
+    padding:14px; margin:16px 0; display:none;
+  }
+  .summary.show{ display:block; }
+  .summary-row{ display:flex; justify-content:space-between; font-size:14px; padding:4px 0; }
+  .summary-row span:first-child{ color:#a8a8a8; }
+  .summary-row span:last-child{ font-weight:700; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+  .actions{ display:flex; gap:10px; margin-top:8px; }
+  .actions button{ margin-top:0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Gerar hash para users.json</h1>
+  <p class="sub">Página offline: nada aqui é enviado para nenhum servidor. Tudo roda no seu navegador.</p>
+  <div class="warn">Isto é só uma barreira simples contra acesso casual, não é segurança de verdade. Qualquer pessoa com acesso ao código-fonte pode ver o conteúdo do app. Não use senhas que você usa em outros lugares.</div>
+
+  <div class="card">
+    <div class="file-row">
+      <button type="button" class="file-btn" id="loadBtn">Carregar users.json atual</button>
+      <input type="file" id="fileInput" accept="application/json,.json">
+    </div>
+    <div class="cache-status" id="cacheStatus">Nenhum arquivo carregado ainda nesta sessão do navegador.</div>
+  </div>
+
+  <label for="username">Usuário (username)</label>
+  <input type="text" id="username" placeholder="ex: william" autocapitalize="off" autocorrect="off" spellcheck="false">
+
+  <label for="name">Nome de exibição</label>
+  <input type="text" id="name" placeholder="ex: William">
+
+  <div class="row">
+    <div>
+      <label for="password">Senha</label>
+      <input type="password" id="password">
+    </div>
+    <div>
+      <label for="salt">Salt</label>
+      <input type="text" id="salt" placeholder="gerado automaticamente">
+    </div>
+  </div>
+  <div class="hint">O salt já vem preenchido com um valor aleatório — pode deixar como está ou trocar por qualquer texto.</div>
+
+  <button id="genBtn">Gerar e adicionar ao users.json</button>
+
+  <div class="summary" id="summary">
+    <div class="summary-row"><span>Usuário</span><span id="sumUser"></span></div>
+    <div class="summary-row"><span>Nome</span><span id="sumName"></span></div>
+    <div class="summary-row"><span>Senha</span><span id="sumPass"></span></div>
+  </div>
+
+  <h2>users.json completo (com este usuário incluído)</h2>
+  <div class="out-label" id="outLabel">Ainda não gerado.</div>
+  <textarea id="out" readonly placeholder="…aparece aqui depois de gerar"></textarea>
+  <div class="actions">
+    <button class="copy-btn" id="copyBtn">Copiar</button>
+    <button class="copy-btn" id="downloadBtn">Baixar users.json</button>
+  </div>
+  <div class="hint">Depois de gerar: baixe (ou copie) este arquivo completo e suba ele no lugar do <code>users.json</code> no GitHub — ele já vem com os usuários antigos e o novo juntos.</div>
+</div>
+
+<script>
+  const CACHE_KEY = "gerar-hash-users-cache";
+
+  function randomSalt(){
+    const bytes = new Uint8Array(6);
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes).map(b => b.toString(16).padStart(2, "0")).join("");
+  }
+  document.getElementById("salt").value = randomSalt();
+
+  async function sha256Hex(str){
+    const enc = new TextEncoder().encode(str);
+    const buf = await crypto.subtle.digest("SHA-256", enc);
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+  }
+
+  // ---------- lista de usuários conhecida (fica guardada neste navegador) ----------
+  function loadCachedUsers(){
+    try{
+      const raw = window.localStorage.getItem(CACHE_KEY);
+      if(!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    }catch(e){ return []; }
+  }
+  function saveCachedUsers(list){
+    try{ window.localStorage.setItem(CACHE_KEY, JSON.stringify(list)); }catch(e){}
+  }
+  let users = loadCachedUsers();
+
+  function updateCacheStatus(){
+    const el = document.getElementById("cacheStatus");
+    if(users.length === 0){
+      el.innerHTML = "Nenhum usuário conhecido ainda. Carregue o <code>users.json</code> atual antes de gerar, ou ignore isso se for o primeiro usuário do arquivo.";
+    } else {
+      const nomes = users.map(u => u.username).join(", ");
+      el.innerHTML = `<b>${users.length}</b> usuário(s) neste arquivo: ${nomes}`;
+    }
+  }
+  updateCacheStatus();
+
+  document.getElementById("loadBtn").addEventListener("click", () => {
+    document.getElementById("fileInput").click();
+  });
+  document.getElementById("fileInput").addEventListener("change", async (ev) => {
+    const file = ev.target.files[0];
+    ev.target.value = "";
+    if(!file) return;
+    try{
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      const list = Array.isArray(parsed && parsed.users) ? parsed.users : null;
+      if(!list){
+        document.getElementById("cacheStatus").textContent = "Esse arquivo não parece um users.json válido (esperava um objeto com \"users\": [...]).";
+        return;
+      }
+      users = list;
+      saveCachedUsers(users);
+      updateCacheStatus();
+    }catch(e){
+      document.getElementById("cacheStatus").textContent = "Não consegui ler esse arquivo como JSON.";
+    }
+  });
+
+  function buildOutput(){
+    const out = document.getElementById("out");
+    const label = document.getElementById("outLabel");
+    out.value = JSON.stringify({ users }, null, 2);
+    label.textContent = `${users.length} usuário(s) neste arquivo — copie ou baixe abaixo:`;
+  }
+
+  document.getElementById("genBtn").addEventListener("click", async () => {
+    const username = document.getElementById("username").value.trim();
+    const name = document.getElementById("name").value.trim() || username;
+    const password = document.getElementById("password").value.replace(/^\s+|\s+$/g, "");
+    const salt = document.getElementById("salt").value.trim();
+    const summary = document.getElementById("summary");
+    if(!username || !password || !salt){
+      document.getElementById("cacheStatus").textContent = "Preencha usuário, senha e salt antes de gerar.";
+      summary.classList.remove("show");
+      return;
+    }
+    const hash = await sha256Hex(salt + password);
+    const novoUsuario = { username, name, salt, hash };
+
+    const idx = users.findIndex(u => (u.username || "").toLowerCase() === username.toLowerCase());
+    const isUpdate = idx !== -1;
+    if(isUpdate) users[idx] = novoUsuario; else users.push(novoUsuario);
+    saveCachedUsers(users);
+
+    // mostra a senha normal (não o hash) só como conferência na tela — ela
+    // nunca entra no JSON que vai pro users.json, só o hash entra.
+    document.getElementById("sumUser").textContent = username;
+    document.getElementById("sumName").textContent = name;
+    document.getElementById("sumPass").textContent = password;
+    summary.classList.add("show");
+
+    buildOutput();
+    document.getElementById("cacheStatus").innerHTML = (isUpdate
+      ? `Usuário <b>${username}</b> atualizado. `
+      : `Usuário <b>${username}</b> adicionado. `) + `Total: <b>${users.length}</b> usuário(s).`;
+  });
+
+  document.getElementById("copyBtn").addEventListener("click", async () => {
+    const out = document.getElementById("out");
+    if(!out.value) return;
+    try{
+      await navigator.clipboard.writeText(out.value);
+      const btn = document.getElementById("copyBtn");
+      const old = btn.textContent;
+      btn.textContent = "Copiado!";
+      setTimeout(() => { btn.textContent = old; }, 1400);
+    }catch(e){
+      out.select();
+      document.execCommand("copy");
+    }
+  });
+
+  document.getElementById("downloadBtn").addEventListener("click", () => {
+    const out = document.getElementById("out");
+    if(!out.value) return;
+    const blob = new Blob([out.value], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "users.json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  });
+</script>
+</body>
+</html>

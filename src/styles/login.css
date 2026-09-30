@@ -1,0 +1,120 @@
+  /* ---------- tela de login (fiel ao mockup) ---------- */
+  .login-wrap{
+    min-height:100vh;
+    display:flex; flex-direction:column;
+    padding:6vh 24px 32px;
+    text-align:center;
+    position:relative;
+    overflow:hidden;
+    margin:calc(var(--s4) * -1) calc(var(--s4) * -1) 0;
+    background:
+      radial-gradient(circle at 20% 0%, rgba(124,92,252,0.35), transparent 50%),
+      radial-gradient(circle at 100% 100%, rgba(255,90,54,0.30), transparent 55%),
+      linear-gradient(160deg, #170f22 0%, #0f0a13 55%, #050308 100%);
+    color:#fff;
+  }
+  .login-wrap::before{
+    content:"";
+    position:absolute; inset:0;
+    background:
+      radial-gradient(circle at 15% 25%, rgba(255,255,255,0.05), transparent 40%),
+      radial-gradient(circle at 85% 75%, rgba(255,255,255,0.04), transparent 40%);
+    pointer-events:none;
+  }
+  .login-logo{
+    width:104px; height:104px; margin:0 auto 22px;
+    border-radius:28px;
+    overflow:hidden;
+    position:relative;
+    z-index:1;
+    box-shadow:0 20px 40px rgba(255,90,54,0.35), 0 0 0 1px rgba(255,255,255,0.08);
+  }
+  .login-logo svg{ width:100%; height:100%; display:block; }
+  .login-logo img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .login-title{
+    font-size:31px; font-weight:800; letter-spacing:-0.02em;
+    margin:0 0 6px; position:relative; z-index:1;
+    color:#fff; font-family:var(--font-display);
+  }
+  .login-title .accent{ color:var(--accent); }
+  .login-sub{
+    font-size:14.5px; color:rgba(255,255,255,0.65);
+    margin:0 0 32px; position:relative; z-index:1;
+    font-weight:500;
+  }
+  .login-form{
+    display:flex; flex-direction:column; gap:12px;
+    text-align:left;
+    position:relative; z-index:1;
+    flex:1;
+  }
+  .login-input-wrap{
+    display:flex; align-items:center; gap:12px;
+    background:rgba(255,255,255,0.06);
+    border:1px solid rgba(255,255,255,0.12);
+    border-radius:999px;
+    padding:0 20px;
+    height:54px;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .login-input-wrap:focus-within{
+    border-color:rgba(255,255,255,0.35);
+    background:rgba(255,255,255,0.09);
+  }
+  .login-input-wrap .li-icon{
+    color:rgba(255,255,255,0.55); display:flex; flex-shrink:0;
+  }
+  .login-input-wrap input{
+    flex:1; min-width:0;
+    background:none; border:none; outline:none; box-shadow:none;
+    font-size:15.5px; color:#fff; font-family:inherit;
+    padding:0;
+  }
+  .login-input-wrap input::placeholder{ color:rgba(255,255,255,0.42); }
+  .login-input-wrap .pw-toggle{
+    background:none; border:none; color:rgba(255,255,255,0.55);
+    padding:6px; display:flex; -webkit-appearance:none; cursor:pointer;
+  }
+
+  .login-keep-row{
+    display:flex; align-items:center; gap:12px;
+    margin:10px 4px 4px;
+    font-size:14px; color:rgba(255,255,255,0.75);
+    font-weight:500;
+  }
+  .switch.lg{ width:52px; height:30px; }
+  .switch.lg .slider::before{ width:24px; height:24px; left:3px; top:3px; }
+  .switch.lg input:checked + .slider::before{ transform:translateX(22px); }
+
+  .login-error{
+    color:#ffb3ab; background:rgba(255,59,48,0.15); border:1px solid rgba(255,59,48,0.3);
+    border-radius:12px; padding:11px 14px; font-size:13px; margin-top:4px;
+    text-align:center;
+  }
+
+  .login-footer{
+    margin-top:auto; padding-top:28px;
+    font-size:13px; color:rgba(255,255,255,0.55);
+    text-align:center; position:relative; z-index:1;
+  }
+  .login-footer a{
+    color:var(--accent); font-weight:700; text-decoration:none;
+  }
+
+  .cta-btn{
+    width:100%;
+    background:linear-gradient(135deg,#ff8862,#ff5a36);
+    color:#fff; border:none;
+    height:54px; border-radius:16px;
+    font-size:16px; font-weight:800;
+    letter-spacing:0.01em;
+    -webkit-appearance:none;
+    box-shadow:0 12px 24px rgba(255,90,54,0.32);
+    transition:transform .12s var(--ease), opacity .15s ease;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    cursor:pointer;
+    margin-top:14px;
+  }
+  .cta-btn:active{ transform:scale(0.98); }
+  .cta-btn:disabled{ opacity:0.6; }
+

@@ -1,0 +1,285 @@
+/* ============================================================
+   design.css — camada visual v8 (carregada por último)
+   Direção: fundo neutro, cards planos, UM elemento escuro e
+   dominante por tela (o treino do dia), laranja só para ação.
+   ============================================================ */
+
+/* ---------- tokens (tema claro; o escuro mantém os seus) ---------- */
+:root{
+  --bg:#f3f2ef;
+  --surface:#ffffff;
+  --surface-3:#ecebe7;
+  --card-border:rgba(20,18,26,0.09);
+  --divider:rgba(20,18,26,0.08);
+  --text-primary:#14121a;
+  --text-secondary:#4f4859;
+  --text-muted:#6d6677;
+  --text-label:#4f4859;
+  --shadow-card:0 1px 2px rgba(20,18,26,0.04);
+  --ink:#17141c;
+  --ink-2:#231f2b;
+  --r-card:22px;
+  --r-ctl:14px;
+}
+:root[data-theme="dark"]{ --ink:#1d1824; --ink-2:#2a2333; --shadow-card:none; }
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --ink:#1d1824; --ink-2:#2a2333; --shadow-card:none; }
+}
+
+body::before, body::after{ display:none; }
+:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+
+/* ---------- tipografia ---------- */
+.tab-title{ font-size:32px; letter-spacing:-0.035em; margin:6px 4px 18px; }
+.greet-hello{ font-size:30px; letter-spacing:-0.035em; }
+.greet-hello .accent{ color:inherit; }
+.greet-date{ font-size:14px; }
+
+/* ---------- cards: planos, hierarquia por contraste ---------- */
+.card{ border-radius:var(--r-card); box-shadow:var(--shadow-card); }
+.stat-card-v3, .greet-bell{ box-shadow:none; }
+
+/* ---------- HERO: o elemento marcante da Home ---------- */
+.hero-card-v2.hero-card-v2.hero-card-v2{
+  background:var(--ink);
+  color:#fff;
+  border:none;
+  border-radius:28px;
+  padding:22px;
+  min-height:216px;
+  box-shadow:0 18px 40px rgba(20,18,26,0.22);
+}
+.hero-card-v2 .hero-muscle{ opacity:0.9; right:-16px; bottom:-18px; width:180px; height:180px; }
+.hero-card-v2 .hero-v2-badge{
+  background:rgba(255,255,255,0.10); border-color:transparent; color:#fff;
+  font-size:12.5px; letter-spacing:0; text-transform:none; font-weight:600;
+}
+.hero-card-v2 .hero-clock{ background:rgba(255,255,255,0.10); border-color:transparent; color:#fff; }
+.hero-v2-name{ font-size:32px; letter-spacing:-0.035em; line-height:1.05; margin-bottom:6px; }
+.hero-v2-sub{ color:rgba(255,255,255,0.68); font-size:14px; }
+.hero-v2-body{ max-width:64%; margin-bottom:22px; }
+.hero-v2-btn{ height:54px; border-radius:var(--r-ctl); font-size:16px; }
+.hero-v2-btn.primary{ background:var(--accent); box-shadow:none; }
+.hero-v2-btn.ghost{ background:rgba(255,255,255,0.10); color:#fff; border-color:transparent; }
+.hero-v2-link{ color:rgba(255,255,255,0.62); font-size:13px; }
+.hero-v2-chip{ background:rgba(255,255,255,0.10); border-color:transparent; color:#fff; min-height:44px; font-size:12.5px; }
+.hero-v2-chip.undo{ color:#ff8a9b; }
+
+/* ---------- stats: uma faixa só, números grandes ---------- */
+.stats-row-v3{
+  gap:0; background:var(--surface); border:1px solid var(--card-border);
+  border-radius:var(--r-card); overflow:hidden;
+}
+.stat-card-v3{
+  background:transparent; border:none; border-radius:0; padding:18px 8px 16px;
+}
+.stat-card-v3 + .stat-card-v3{ border-left:1px solid var(--divider); }
+.stat-card-v3 .stat-num{ font-size:36px; letter-spacing:-0.04em; color:var(--text-primary); }
+.stat-card-v3.streak .stat-num{ color:var(--accent); }
+.stat-card-v3.week .stat-num, .stat-card-v3.month .stat-num{ color:var(--text-primary); }
+.stat-card-v3 .stat-label{ font-size:12px; letter-spacing:0; text-transform:none; font-weight:600; }
+.week-dot{ width:34px; height:34px; }
+.week-dot-label{ font-size:11.5px; }
+
+/* ---------- tab bar flutuante ---------- */
+.tabbar{
+  left:12px; right:12px; max-width:406px;
+  bottom:calc(8px + env(safe-area-inset-bottom));
+  border:1px solid var(--card-border);
+  border-radius:28px;
+  padding:8px 10px;
+  box-shadow:0 12px 32px rgba(20,18,26,0.14);
+}
+.screen{ padding-bottom:calc(var(--s4) + 92px + env(safe-area-inset-bottom)); }
+.tab-btn-icon{ width:56px; height:30px; border-radius:15px; }
+.tab-btn-label{ font-size:11px; }
+.tab-btn.active{ color:var(--text-primary); }
+.tab-btn.active .tab-btn-icon{ background:var(--accent); color:#fff; }
+
+/* ---------- sheets ---------- */
+.sheet-backdrop{ background:rgba(10,8,14,0.5); -webkit-backdrop-filter:blur(4px); backdrop-filter:blur(4px); }
+.sheet{ border-radius:32px 32px 0 0; }
+.sheet-handle{ width:40px; height:5px; background:var(--divider); }
+.sheet-ex-row{ border-radius:20px; padding:14px; }
+.sheet-ex-name{ font-size:15px; letter-spacing:-0.01em; }
+.sheet-ex-last{ font-size:12px; }
+
+/* ---------- treino ativo: alvos de toque grandes ---------- */
+.sheet-set{ min-height:48px; gap:10px; transition:background .2s ease; }
+.sheet-set-num, .sheet-set-check{ width:40px; height:40px; font-size:13px; }
+.sheet-set-check{ background:var(--surface-3); }
+.sheet-set-check:active{ transform:scale(0.92); }
+.step-group{ min-height:46px; border-radius:var(--r-ctl); }
+.sheet-set.done .step-group{ background:var(--ok-bg); border-color:var(--ok-border); opacity:1; }
+.sheet-set.done .sheet-set-check{ animation:setDone .28s var(--ease); }
+@keyframes setDone{ 0%{ transform:scale(0.7); } 60%{ transform:scale(1.12); } 100%{ transform:scale(1); } }
+.chip{ min-height:44px; }
+
+/* ---------- timer de descanso: pílula escura flutuante ---------- */
+.rest-timer{
+  left:12px; right:12px; max-width:406px;
+  bottom:calc(10px + env(safe-area-inset-bottom));
+  background:var(--ink); color:#fff; border:none; border-radius:26px;
+  padding:12px 14px; box-shadow:0 16px 40px rgba(20,18,26,0.35);
+}
+.rest-ring{ width:52px; height:52px; }
+.rest-ring .ring-bg{ stroke:rgba(255,255,255,0.16); }
+.rest-ring .ring-fg{ stroke:var(--accent); stroke-width:4; }
+.rest-ring .ring-bg{ stroke-width:4; }
+.rest-label{ color:rgba(255,255,255,0.62); font-size:12px; letter-spacing:0; text-transform:none; }
+.rest-time{ font-size:28px; letter-spacing:-0.03em; color:#fff; }
+.rest-btn{ background:rgba(255,255,255,0.12); color:#fff; border-color:transparent; min-height:44px; padding:0 16px; border-radius:var(--r-ctl); font-size:14px; }
+.rest-btn.primary{ background:var(--accent); }
+
+/* ---------- desktop: app centralizado, sem coluna perdida ---------- */
+@media (min-width:700px){
+  body{ background:var(--bg); }
+  .screen{ box-shadow:0 0 0 1px var(--card-border); background:var(--bg); min-height:100vh; }
+}
+
+/* ============================================================
+   Rodada 2 — mais limpo, moderno, sem clip-art
+   ============================================================ */
+.greet-hello{ font-size:26px; letter-spacing:-0.03em; line-height:1.1; }
+.greet-date{ text-transform:none; font-size:13.5px; margin-top:6px; }
+.greet-avatar{ background:var(--ink); color:#fff; }
+.greet-bell{ background:transparent; }
+
+/* banner discreto, sem borda azul */
+.banner, .banner.info{
+  background:var(--surface); border:1px solid var(--card-border); color:var(--text-secondary);
+  border-radius:var(--r-ctl); font-size:13px; padding:12px 14px;
+}
+.banner button{ color:var(--accent); text-decoration:none; font-weight:700; }
+.banner:not(.info){ border-color:var(--danger-border); color:var(--danger); }
+
+/* HERO: some o boneco; entra um "disco de anilhas" em anéis de CSS */
+.hero-card-v2 .hero-muscle{ display:none; }
+.hero-card-v2.hero-card-v2.hero-card-v2{
+  background:
+    radial-gradient(circle at 100% 0%, transparent 0 34px, rgba(255,90,54,.85) 35px 38px, transparent 39px 58px,
+      rgba(255,255,255,.14) 59px 60px, transparent 61px 84px, rgba(255,255,255,.08) 85px 86px, transparent 87px 112px,
+      rgba(255,255,255,.05) 113px 114px, transparent 115px),
+    linear-gradient(160deg, var(--ink-2) 0%, var(--ink) 60%);
+  padding:20px; min-height:0;
+}
+.hero-v2-body{ max-width:none; margin:18px 0 20px; }
+.hero-v2-name{ font-size:30px; line-height:1.08; }
+.hero-v2-sub{ font-size:14px; margin-top:2px; }
+.hero-v2-btn{ height:52px; font-size:15.5px; border-radius:16px; }
+.hero-v2-btn.primary{ background:linear-gradient(180deg,#ff7048,#ff5a36); box-shadow:0 8px 20px rgba(255,90,54,.35); }
+.hero-v2-actions{ grid-template-columns:1.4fr 1fr; }
+
+/* rótulos sem caixa alta */
+.week-dots-card .sec-title, .week-dots-card h3, .card .sec-label, .block-title, .section-title, [class*="eyebrow"], .bars-title, .rest-label{
+  text-transform:none; letter-spacing:0;
+}
+.week-dots-card > *:first-child{ text-transform:none; letter-spacing:-0.01em; font-size:15px; font-weight:700; color:var(--text-primary); }
+.week-dot{ background:var(--surface-3); border:none; }
+.week-dot.today, .week-dot[class*="today"]{ box-shadow:0 0 0 2px var(--accent); background:var(--surface); }
+
+/* tab bar mais leve: só o ícone ativo ganha pílula */
+.tabbar{ padding:6px 6px; border-radius:26px; background:rgba(255,255,255,.9); }
+:root[data-theme="dark"] .tabbar{ background:rgba(29,24,36,.9); }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .tabbar{ background:rgba(29,24,36,.9); } }
+.tab-btn{ padding:4px 0; gap:2px; }
+.tab-btn-icon{ width:46px; height:30px; }
+.tab-btn-label{ font-size:10.5px; font-weight:600; letter-spacing:-0.01em; }
+.tab-btn.active .tab-btn-icon{ background:var(--ink); color:#fff; }
+.tab-btn.active{ color:var(--text-primary); }
+
+/* atalhos e cards secundários */
+.card{ border-radius:20px; padding:20px 16px; }
+.hero-card-v2{ padding:20px; }
+
+/* corrige body encolhido (html e body eram ambos flex) */
+body{ width:100%; }
+
+/* rótulos da folha sem caixa alta */
+.stat-grid *, .sheet-ex-last, .sheet-hint{ text-transform:none; letter-spacing:0; }
+.sheet-hint{ font-size:12.5px; }
+
+/* ícone de braço: um pouco maior nos cards de treino */
+.wl-icon svg{ width:28px; height:28px; }
+
+/* ============================================================
+   Rodada 3 — fonte própria, modo foco, progresso, login
+   ============================================================ */
+@font-face{
+  font-family:"Treino Score"; font-weight:400 900; font-display:swap;
+  src:url("../fonts/treino-score.woff2") format("woff2");
+  unicode-range:U+0020,U+002C-002E,U+0030-003A;
+}
+:root{ --font-score:"Treino Score", ui-rounded, system-ui, sans-serif; }
+.stat-num, .rest-time, .hero-clock, .sg-num, .body-big, .step-value, .sheet-ex-name::after, .record-val{
+  font-family:var(--font-score); font-weight:400; letter-spacing:0.02em;
+}
+.stat-card-v3 .stat-num{ font-size:40px; }
+.rest-time{ font-size:34px; }
+
+/* modo foco no treino */
+.sheet-ex-row{ transition:opacity .2s ease, box-shadow .2s ease; }
+.sheet-ex-row:not(.is-collapsed){ border-color:var(--accent-border); box-shadow:0 0 0 3px var(--accent-soft); }
+.sheet-ex-row.is-collapsed{ padding:12px 14px; opacity:.7; cursor:pointer; }
+.sheet-ex-row.is-collapsed .sheet-sets,
+.sheet-ex-row.is-collapsed .sheet-ex-extra,
+.sheet-ex-row.is-collapsed .sheet-ex-last,
+.sheet-ex-row.is-collapsed .suggest-chip,
+.sheet-ex-row.is-collapsed .ex-tools{ display:none; }
+.sheet-ex-row.is-collapsed .sheet-ex-name{ margin:0; }
+.sheet-ex-name::after{ content:attr(data-progress); margin-left:auto; font-size:20px; color:var(--text-muted); }
+.sheet-ex-name:not([data-progress])::after{ content:none; }
+
+/* progresso: barras e números */
+.sg-num{ font-size:30px; line-height:1; }
+.sg-label{ font-size:12px; }
+.hbar-track{ height:10px; border-radius:6px; background:var(--surface-3); }
+.hbar-fill{ border-radius:6px; background:linear-gradient(90deg,var(--accent-2),var(--accent)); }
+.vbar-fill{ border-radius:6px 6px 3px 3px; background:var(--surface-3); }
+.vbar-fill.current{ background:var(--accent); }
+.vbar-label, .hbar-name, .hbar-val{ font-size:12px; }
+.pr-chip, .record-ico{ background:var(--accent-soft); color:var(--accent); }
+
+/* histórico / calendário */
+.cal-grid{ gap:6px; }
+.cal-cell{ border-radius:14px; }
+.cal-month-label{ font-size:20px; font-weight:800; letter-spacing:-0.02em; text-transform:capitalize; }
+.cal-weekdays span, .cal-weekdays div{ font-size:12px; text-transform:none; letter-spacing:0; }
+
+/* estados vazios com identidade */
+.empty-icon{
+  width:72px; height:72px; margin:0 auto 12px; border-radius:24px;
+  display:flex; align-items:center; justify-content:center;
+  background:var(--accent-soft); color:var(--accent);
+}
+.empty-icon svg{ width:36px; height:36px; }
+
+/* confete de recorde */
+.confetti{ position:fixed; inset:0; pointer-events:none; z-index:200; overflow:hidden; }
+.confetti i{
+  position:absolute; top:-10px; width:8px; height:14px; border-radius:2px;
+  animation:confettiFall 1.5s cubic-bezier(.3,.6,.4,1) forwards;
+}
+@keyframes confettiFall{ to{ transform:translate(var(--dx), 105vh) rotate(var(--r)); opacity:.9; } }
+
+/* login: mesmo hero escuro com anéis */
+.login-wrap{
+  background:
+    radial-gradient(circle at 100% 0%, transparent 0 60px, rgba(255,90,54,.85) 61px 65px, transparent 66px 110px,
+      rgba(255,255,255,.12) 111px 112px, transparent 113px 170px, rgba(255,255,255,.07) 171px 172px, transparent 173px 240px,
+      rgba(255,255,255,.04) 241px 242px, transparent 243px),
+    linear-gradient(170deg, var(--ink-2) 0%, #0d0b11 70%);
+}
+.login-logo{ border-radius:30px; box-shadow:0 18px 40px rgba(255,90,54,.3), 0 0 0 1px rgba(255,255,255,.1); }
+.login-title{ font-size:36px; letter-spacing:-0.035em; }
+.login-title .accent{ color:inherit; }
+.login-sub{ font-size:15px; }
+
+/* ajuste de escala: os dígitos do Treino Score são altos */
+.stat-card-v3 .stat-num{ font-size:34px; }
+.rest-time{ font-size:30px; }
+.sg-num{ font-size:26px; }
+.sheet-ex-name::after{ font-size:17px; }
+.step-value{ font-size:20px; }
+.stat-card-v3 .stat-num{ font-size:40px; }
+.step-value{ font-size:24px; }

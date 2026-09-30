@@ -1,0 +1,18 @@
+  /* ---------- hero clock (shared) ---------- */
+  .hero-clock{
+    display:flex; align-items:center; gap:6px;
+    padding:6px 10px;
+    border-radius:12px;
+    flex-shrink:0;
+    min-width:78px;
+    justify-content:center;
+    font-weight:700;
+  }
+  .hero-clock.hidden{ display:none; }
+  .hero-clock svg{ width:14px; height:14px; }
+  .hero-clock .clock-time{
+    font-size:14px; font-weight:700;
+    font-variant-numeric:tabular-nums;
+    letter-spacing:0.02em;
+  }
+
