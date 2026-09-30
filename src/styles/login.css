@@ -134,3 +134,6 @@
     .login-wrap .cta-btn{ height:50px; margin-top:8px; }
     .login-wrap .login-footer{ padding-top:12px; }
   }
+
+  /* a barra de abas não existe na tela de login (fica vazia, só com o fundo) */
+  .tabbar:empty, body:has(.login-wrap) .tabbar{ display:none !important; }
