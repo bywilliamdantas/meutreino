@@ -1,12 +1,19 @@
   /* ---------- tela de login (fiel ao mockup) ---------- */
+  /* Tela de login fixa: ocupa exatamente a área visível, sem rolagem. */
+  html:has(.login-wrap), body:has(.login-wrap){
+    height:100vh; height:100dvh; min-height:0;
+    overflow:hidden; overscroll-behavior:none;
+  }
   .login-wrap{
-    min-height:100vh;
+    position:fixed; top:0; bottom:0; left:0; right:0;
+    width:100%; max-width:430px; margin:0 auto;
+    height:100vh; height:100dvh;
+    z-index:5;
     display:flex; flex-direction:column;
-    padding:6vh 24px 32px;
+    padding:calc(env(safe-area-inset-top) + clamp(16px, 5vh, 48px)) 24px calc(env(safe-area-inset-bottom) + 20px);
     text-align:center;
-    position:relative;
     overflow:hidden;
-    margin:calc(var(--s4) * -1) calc(var(--s4) * -1) 0;
+    touch-action:manipulation;
     background:
       radial-gradient(circle at 20% 0%, rgba(124,92,252,0.35), transparent 50%),
       radial-gradient(circle at 100% 100%, rgba(255,90,54,0.30), transparent 55%),
@@ -118,3 +125,12 @@
   .cta-btn:active{ transform:scale(0.98); }
   .cta-btn:disabled{ opacity:0.6; }
 
+
+  @media (max-height:700px){
+    .login-wrap .login-logo{ width:84px; height:84px; margin-bottom:14px; border-radius:22px; }
+    .login-wrap .login-title{ font-size:28px; }
+    .login-wrap .login-sub{ margin-bottom:18px; }
+    .login-wrap .login-input-wrap{ height:50px; }
+    .login-wrap .cta-btn{ height:50px; margin-top:8px; }
+    .login-wrap .login-footer{ padding-top:12px; }
+  }
