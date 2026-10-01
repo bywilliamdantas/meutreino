@@ -9,6 +9,43 @@ export function sessionsFor(dateKey) {
   return [v];
 }
 
+/* Uma sessão "tem registro" quando alguma série foi guardada nela. */
+export function sessionHasData(log) {
+  return Object.values(log || {}).some(sets => Array.isArray(sets) && sets.length > 0);
+}
+
+/* Foto do treino no momento do registro: nomes, tipos e metas das séries.
+   Serve para o histórico não mudar quando o treino é editado depois. */
+export function snapshotExercises(letter, onlyIds) {
+  const w = store.data.workouts[letter];
+  if (!w || w.isRest) return [];
+  return (w.exercises || []).filter(ex => !onlyIds || onlyIds.has(ex.id)).map(ex => {
+    const o = {
+      id: ex.id,
+      name: ex.name || "",
+      type: ex.type || "strength"
+    };
+    if (ex.sets !== undefined) o.sets = ex.sets;
+    if (ex.reps !== undefined) o.reps = ex.reps;
+    if (ex.rest !== undefined) o.rest = ex.rest;
+    if (ex.mins !== undefined) o.mins = ex.mins;
+    if (ex.ss) o.ss = true;
+    if (ex.link) o.link = ex.link;
+    return o;
+  });
+}
+
+/* Registra a foto do treino na sessão (só quando há séries e ainda não está finalizada ou sem foto). */
+export function stampSnapshot(sess) {
+  if (!sess || !sessionHasData(sess.log)) return;
+  if (sess.snapshot && sess.endedAt) return;
+  sess.snapshot = snapshotExercises(sess.letter);
+}
+
+export function snapshotExercise(sess, exId) {
+  return sess && Array.isArray(sess.snapshot) ? sess.snapshot.find(e => e.id === exId) || null : null;
+}
+
 export function firstSessionFor(dateKey) {
   return sessionsFor(dateKey)[0] || null;
 }

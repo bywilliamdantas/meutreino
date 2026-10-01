@@ -63,6 +63,7 @@ export const store = {
   updateAvailable: null,
   swRegistration: null,
   historyMonth: new Date(),
+  historyExpanded: false,
   restTimerInterval: null,
   sheetClockInterval: null,
   heroClockInterval: null,

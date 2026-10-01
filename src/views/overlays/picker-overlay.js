@@ -2,7 +2,7 @@ import { newExId } from "../../counters.js";
 import { EXERCISE_LIBRARY } from "../../data/exercise-library.js";
 import { ICONS } from "../../data/icons.js";
 import { exThumbHtml } from "../../exercises/exercise-visuals.js";
-import { getAllExerciseNames, getCustomExerciseNames } from "../../exercises/exercises.js";
+import { getAllExerciseNames, getCustomExerciseNames, isCardioName } from "../../exercises/exercises.js";
 import { persist } from "../../persistence.js";
 import { store } from "../../store.js";
 import { colorFor } from "../../ui/helpers.js";
@@ -96,7 +96,7 @@ export function renderExercisePickerOverlay(root) {
           reps: "",
           rest: "",
           mins: "",
-          type: "strength"
+          type: isCardioName(n) ? "cardio" : "strength"
         });
       });
       haptic([10, 30, 10]);
@@ -206,6 +206,7 @@ export function renderExercisePickerList() {
         const ex = w.exercises.find(e => e.id === store.overlay.exId);
         if (!ex) return;
         ex.name = name;
+        if (isCardioName(name)) ex.type = "cardio";
         haptic(6);
         closeOverlay();
         render();

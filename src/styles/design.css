@@ -168,7 +168,7 @@ body::before, body::after{ display:none; }
 .hero-v2-sub{ font-size:14px; margin-top:2px; }
 .hero-v2-btn{ height:52px; font-size:15.5px; border-radius:16px; }
 .hero-v2-btn.primary{ background:linear-gradient(180deg,#ff7048,#ff5a36); box-shadow:0 8px 20px rgba(255,90,54,.35); }
-.hero-v2-actions{ grid-template-columns:1.4fr 1fr; }
+.hero-v2-actions{ grid-template-columns:1fr 1fr; }
 
 /* rótulos sem caixa alta */
 .week-dots-card .sec-title, .week-dots-card h3, .card .sec-label, .block-title, .section-title, [class*="eyebrow"], .bars-title, .rest-label{

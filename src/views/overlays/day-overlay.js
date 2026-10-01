@@ -14,7 +14,7 @@ import { fmtClock, fmtDuration, fmtW, fromDisp, toDisp, todayKey, unit, weightSt
 import { newSessionId } from "../../utils/ids.js";
 import { isCardio, isWork, parseNum, roundToStep } from "../../utils/numbers.js";
 import { activeElapsedMs, syncWakeLock } from "../../workouts/active-session.js";
-import { computeSessionIntensity, sessionDurationMs, sessionsFor } from "../../workouts/sessions.js";
+import { computeSessionIntensity, sessionDurationMs, sessionHasData, sessionsFor, snapshotExercise, stampSnapshot } from "../../workouts/sessions.js";
 import { workoutLabel } from "../../workouts/workouts.js";
 import { render } from "../render.js";
 import { closeOverlay, renderOverlay } from "./overlay-manager.js";
@@ -46,6 +46,43 @@ export function ensureCardioSets(log, exId) {
     if (!("done" in s)) s.done = false;
   });
   return log[exId];
+}
+
+/* Lista de exercícios exibida na folha do dia.
+   - Sessão em andamento / nova: usa o treino atual (pode ter séries novas).
+   - Sessão já registrada (finalizada ou de dia anterior): mostra SÓ o que foi
+     registrado, com a quantidade de séries salva — mudar o treino depois
+     (séries, exercícios apagados/adicionados) não altera o histórico. */
+export function sessionExerciseList(w, log, sess, dateKey) {
+  const template = w && w.exercises || [];
+  const frozen = !!(sess && sessionHasData(sess.log) && (sess.endedAt || dateKey < todayKey()));
+  if (!frozen) return {
+    list: template,
+    frozen: false
+  };
+  const base = Array.isArray(sess.snapshot) && sess.snapshot.length ? sess.snapshot : template;
+  const seen = new Set();
+  const list = [];
+  base.forEach(ex => {
+    if (Array.isArray(log[ex.id]) && log[ex.id].length && !seen.has(ex.id)) {
+      seen.add(ex.id);
+      list.push(ex);
+    }
+  });
+  Object.keys(log).forEach(id => {
+    if (seen.has(id) || !Array.isArray(log[id]) || !log[id].length) return;
+    const fromTemplate = template.find(e => e.id === id);
+    const isCardioLog = log[id].some(s => s && s.minutes != null);
+    list.push(fromTemplate || {
+      id,
+      name: "Exercício removido",
+      type: isCardioLog ? "cardio" : "strength"
+    });
+  });
+  return {
+    list,
+    frozen: true
+  };
 }
 
 export function isLinkedNext(w, idx) {
@@ -165,9 +202,17 @@ export function renderDayOverlay(root) {
   const a = store.data.activeSession;
   const hasActiveHere = (a.state === "running" || a.state === "paused") && dateKey === todayKey() && a.letter === letter;
   const elapsed = hasActiveHere ? Math.floor(activeElapsedMs() / 1000) : Math.floor((Date.now() - startedAt) / 1000);
-  const hasExercises = !w.isRest && w.exercises.length > 0;
-  const exercisesHtml = w.isRest ? `<div class="sheet-empty">Dia de descanso — nada para registrar.</div>` : w.exercises.length ? `<div class="sheet-exercises">${w.exercises.map((ex, i) => {
-    const linked = isLinkedNext(w, i) || i > 0 && isLinkedNext(w, i - 1);
+  const sessObj = store.overlay.sessionId ? sessionsFor(dateKey).find(s => s.id === store.overlay.sessionId) : null;
+  const shown = sessionExerciseList(w, log, sessObj && sessObj.letter === letter ? sessObj : null, dateKey);
+  const dayEx = shown.list;
+  store.overlay.frozen = shown.frozen;
+  const wv = {
+    ...w,
+    exercises: dayEx
+  };
+  const hasExercises = !w.isRest && dayEx.length > 0;
+  const exercisesHtml = w.isRest ? `<div class="sheet-empty">Dia de descanso — nada para registrar.</div>` : dayEx.length ? `<div class="sheet-exercises">${dayEx.map((ex, i) => {
+    const linked = isLinkedNext(wv, i) || i > 0 && isLinkedNext(wv, i - 1);
     if (isCardio(ex)) return renderCardioRow(ex, log, dateKey, linked);
     return renderStrengthRow(ex, log, dateKey, linked);
   }).join("")}</div>` : `<div class="empty-state">
@@ -181,7 +226,7 @@ export function renderDayOverlay(root) {
     const ms = sess ? sessionDurationMs(sess) : null;
     if (ms) durationLabel = fmtDuration(ms);
   }
-  const intensity = computeSessionIntensity(w, log);
+  const intensity = computeSessionIntensity(wv, log);
   const color = colorFor(letter, store.data.order);
   const sessionHeadHtml = `<div class="sheet-session-head">
     <div class="ssh-top">
@@ -194,7 +239,7 @@ export function renderDayOverlay(root) {
     </div>
     ${hasExercises ? `<div class="ssh-stats">
       <div class="ssh-stat"><span class="ssh-stat-num" id="sheetClockTime">${durationLabel}</span><span class="ssh-stat-label">duração</span></div>
-      <div class="ssh-stat"><span class="ssh-stat-num">${w.exercises.length}</span><span class="ssh-stat-label">exercício${w.exercises.length === 1 ? "" : "s"}</span></div>
+      <div class="ssh-stat"><span class="ssh-stat-num">${dayEx.length}</span><span class="ssh-stat-label">exercício${dayEx.length === 1 ? "" : "s"}</span></div>
       <div class="ssh-stat"><span class="ssh-stat-num">${intensity || "—"}</span><span class="ssh-stat-label">intensidade</span></div>
     </div>` : ""}
   </div>`;
@@ -241,6 +286,11 @@ export function renderDayOverlay(root) {
   }
   document.querySelectorAll('[data-role="sheetletter"]').forEach(b => {
     b.addEventListener("click", () => {
+      if (store.overlay.frozen && b.dataset.letter !== store.overlay.letter) {
+        haptic(6);
+        showToast("Treino já registrado — as séries salvas não podem ser trocadas");
+        return;
+      }
       haptic(6);
       store.overlay.letter = b.dataset.letter;
       renderOverlay();
@@ -446,6 +496,7 @@ export function renderDayOverlay(root) {
     }
     if (Object.keys(meta).length) sess.meta = meta;else delete sess.meta;
     if (note) sess.note = note;else delete sess.note;
+    stampSnapshot(sess);
     store.data.sessions[dk] = arr;
     haptic([10, 40, 10]);
     closeOverlay();
@@ -486,6 +537,7 @@ export function autoSaveOverlay() {
   const note = (store.overlay.note || "").trim();
   if (note) sess.note = note;else delete sess.note;
   if (!sess.startedAt) sess.startedAt = startedAt;
+  stampSnapshot(sess);
   store.data.sessions[dateKey] = arr;
   persist();
 }

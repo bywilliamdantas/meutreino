@@ -1,6 +1,6 @@
 import { SET_TYPE_NAME } from "../config.js";
 import { initExIdCounter, initRestCounter } from "../counters.js";
-import { migrateActiveSession, migrateSessions, migrateSettings, migrateWorkouts } from "../data-migrations.js";
+import { migrateActiveSession, migrateSessionSnapshots, migrateSessions, migrateSettings, migrateWorkouts } from "../data-migrations.js";
 import { persist } from "../persistence.js";
 import { store } from "../store.js";
 import { showToast } from "../ui/toast.js";
@@ -16,6 +16,7 @@ export async function mergeImportData(parsed) {
   migrateSettings(parsed);
   migrateActiveSession(parsed);
   migrateWorkouts(parsed);
+  migrateSessionSnapshots(parsed);
   Object.keys(parsed.sessions || {}).forEach(k => {
     const incoming = parsed.sessions[k] || [];
     const existing = sessionsFor(k);
@@ -49,6 +50,7 @@ export async function replaceImportData(parsed, msg) {
   migrateSettings(store.data);
   migrateActiveSession(store.data);
   migrateWorkouts(store.data);
+  migrateSessionSnapshots(store.data);
   store.data.activeSession = {
     letter: null,
     state: "idle",
@@ -94,10 +96,14 @@ export async function exportCsv() {
           type: ex.type || "strength"
         });
         Object.keys(log).forEach(exId => {
-          const meta = exMap[exId] || {
+          const snap = Array.isArray(sess.snapshot) ? sess.snapshot.find(e => e.id === exId) : null;
+          const meta = exMap[exId] || (snap ? {
+            name: snap.name || exId,
+            type: snap.type || "strength"
+          } : {
             name: exId,
             type: "strength"
-          };
+          });
           const xm = sess.meta && sess.meta[exId] || {};
           (log[exId] || []).forEach((s, i) => {
             rows.push([dateKey, String(sessIdx + 1), letter || "", meta.name, meta.type === "cardio" ? "cardio" : "forca", String(i + 1), SET_TYPE_NAME[s.type] || "normal", s.weight != null ? String(s.weight).replace(".", ",") : "", s.reps != null ? String(s.reps) : "", s.minutes != null ? String(s.minutes) : "", s.done ? "1" : "0", i === 0 && xm.rpe != null ? String(xm.rpe) : "", i === 0 && xm.note ? xm.note : "", i === 0 && sess.note ? sess.note : ""]);

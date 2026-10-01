@@ -7,12 +7,11 @@ import { attachHandlers } from "../event-handlers.js";
 import { exThumbHtml } from "../exercises/exercise-visuals.js";
 import { daysSince, exerciseHistory } from "../exercises/exercises.js";
 import { heroMuscleSvg } from "../icons-svg.js";
-import { collectRecords } from "../stats/stats.js";
 import { store } from "../store.js";
 import { getThemePref } from "../theme.js";
 import { avatarInnerHtml, blockHeader, colorFor, userDisplayName } from "../ui/helpers.js";
 import { escapeAttr, escapeHtml } from "../utils/dom.js";
-import { dateKeyFromDate, fmtDuration, fmtDurationShort, fmtW, todayKey, unit } from "../utils/format.js";
+import { dateKeyFromDate, fmtDuration, fmtDurationShort, todayKey } from "../utils/format.js";
 import { isCardio } from "../utils/numbers.js";
 import { renderHeroClock, runCountUp, startHeroClockTicker, syncWakeLock } from "../workouts/active-session.js";
 import { computeStreak, isRestLetter, sessionsFor, sessionsThisMonth, sessionsThisWeek, totalDays, totalDurationForDay } from "../workouts/sessions.js";
@@ -165,21 +164,7 @@ export function render() {
     </div>`;
   }
   weekDotsHtml += `</div></div>`;
-  const allRecords = collectRecords().slice().sort((x, y) => y.pr.maxWeightDate < x.pr.maxWeightDate ? -1 : y.pr.maxWeightDate > x.pr.maxWeightDate ? 1 : 0);
-  const lastRecord = allRecords[0] || null;
-  const lastRecordHtml = lastRecord ? `<button type="button" class="card last-record-card" id="goLastRecord">
-    <span class="record-ico">${ICONS.trophy}</span>
-    <span style="flex:1;min-width:0;text-align:left;">
-      <span class="lr-title">Último recorde batido</span>
-      <span class="lr-name">${escapeHtml(lastRecord.ex.name)} · ${fmtW(lastRecord.pr.maxWeight)} ${unit()}${lastRecord.pr.maxWeightReps ? " × " + lastRecord.pr.maxWeightReps : ""}</span>
-    </span>
-    <span class="lr-arrow">${ICONS.right}</span>
-  </button>` : "";
-  const quickActionsHtml = `<div class="quick-actions">
-    <button type="button" class="quick-action-btn" id="qaWeight">${ICONS.chart}<span>Registrar peso</span></button>
-    <button type="button" class="quick-action-btn" id="qaHistory">${ICONS.timer}<span>Ver histórico</span></button>
-  </div>`;
-  const homeHtml = `${greetHtml}${bannersHtml}${heroHtml}${statsRowHtml}${weekDotsHtml}${lastRecordHtml}${quickActionsHtml}`;
+  const homeHtml = `${greetHtml}${bannersHtml}${heroHtml}${statsRowHtml}${weekDotsHtml}`;
 
   /* -------- workout edit card -------- */
   function renderWorkoutEditCard(key) {
@@ -307,7 +292,20 @@ export function render() {
       <p class="empty-sub">Os treinos que você concluir vão aparecer aqui.</p>
     </div>`;
   } else {
-    historyHtml += `<div class="card month-sessions-card">${monthKeys.map(dk => {
+    const MONTH_PREVIEW = 5;
+    const canCollapse = monthKeys.length > MONTH_PREVIEW;
+    const expanded = !canCollapse || store.historyExpanded;
+    const shownKeys = expanded ? monthKeys : monthKeys.slice(0, MONTH_PREVIEW);
+    let monthTrainings = 0;
+    let monthMs = 0;
+    monthKeys.forEach(dk => {
+      monthTrainings += sessionsFor(dk).filter(s => !isRestLetter(s.letter)).length;
+      monthMs += totalDurationForDay(dk) || 0;
+    });
+    const summaryBits = [`${monthKeys.length} dia${monthKeys.length === 1 ? "" : "s"}`, `${monthTrainings} treino${monthTrainings === 1 ? "" : "s"}`];
+    if (monthMs) summaryBits.push(fmtDurationShort(monthMs));
+    historyHtml += `<div class="month-sessions-summary">${summaryBits.join(" · ")}</div>
+    <div class="card month-sessions-card compact">${shownKeys.map(dk => {
       const arr = sessionsFor(dk);
       const [, m, d] = dk.split("-").map(Number);
       const dur = totalDurationForDay(dk);
@@ -321,7 +319,7 @@ export function render() {
         ${dur ? `<span class="ms-duration">${fmtDurationShort(dur)}</span>` : ""}
         <span class="ms-arrow">${ICONS.right}</span>
       </button>`;
-    }).join("")}</div>`;
+    }).join("")}${canCollapse ? `<button type="button" class="month-sessions-toggle" id="monthSessionsToggle">${expanded ? "Mostrar menos" : `Ver todas (${monthKeys.length} dias)`}</button>` : ""}</div>`;
   }
   const progressHtml = renderStatsCard() + renderRecordsCard() + renderBodyCard();
 
@@ -402,10 +400,29 @@ export function render() {
       <span class="conta-avatar" style="background:var(--surface-3);color:var(--text-primary);">${ICONS.download}</span>
       <span class="conta-info">
         <span class="conta-name">Dados e backup</span>
-        <span class="conta-username">Último backup: ${bkTxt} · ${APP_VERSION}</span>
+        <span class="conta-username">Último backup: ${bkTxt}</span>
       </span>
       ${ICONS.right}
-    </button>`;
+    </button>
+
+    ${blockHeader("Sobre o app")}
+    <div class="card">
+      <div class="reminder-row">
+        <div style="display:flex;flex-direction:column;gap:2px;">
+          <span>Versão do aplicativo</span>
+          <span id="appVersionText" style="font-size:11px;color:var(--text-muted);">${APP_VERSION}</span>
+        </div>
+        <button class="footer-btn" id="checkUpdateBtn" style="flex:none;padding:9px 14px;">
+          <span id="checkUpdateIcon">${ICONS.refresh}</span>
+          <span id="checkUpdateLabel">Atualizar</span>
+        </button>
+      </div>
+      <div class="reminder-row" style="margin-top:14px;">
+        <span>Último backup exportado</span>
+        <span class="status-pill">${bkTxt}</span>
+      </div>
+    </div>
+    <div class="app-footer">William Dantas - ©2026</div>`;
 
   /* -------- dados e backup -------- */
   const backupCount = readAutoBackups().length;
@@ -465,26 +482,7 @@ export function render() {
       </button>
     </div>
 
-    <p class="settings-section">Sobre o app</p>
-    <div class="card">
-      <div class="reminder-row">
-        <div style="display:flex;flex-direction:column;gap:2px;">
-          <span>Versão do aplicativo</span>
-          <span id="appVersionText" style="font-size:11px;color:var(--text-muted);">${APP_VERSION}</span>
-        </div>
-        <button class="footer-btn" id="checkUpdateBtn" style="flex:none;padding:9px 14px;">
-          <span id="checkUpdateIcon">${ICONS.refresh}</span>
-          <span id="checkUpdateLabel">Atualizar</span>
-        </button>
-      </div>
-      <div class="reminder-row" style="margin-top:14px;">
-        <span>Último backup exportado</span>
-        <span class="status-pill">${bkTxt}</span>
-      </div>
-    </div>
-
-    <input type="file" id="importFile" accept="application/json">
-    <div class="app-footer">William Dantas - ©2026</div>`;
+    <input type="file" id="importFile" accept="application/json">`;
 
   /* -------- perfil -------- */
   const perfilHtml = `<div class="perfil-page">

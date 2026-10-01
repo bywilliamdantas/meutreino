@@ -3,6 +3,11 @@ import { store } from "../store.js";
 import { isCardio, isWork } from "../utils/numbers.js";
 import { sessionsFor } from "../workouts/sessions.js";
 
+export function isCardioName(name) {
+  const n = String(name || "").trim().toLowerCase();
+  return !!n && (EXERCISE_LIBRARY["Cardio"] || []).some(c => c.toLowerCase() === n);
+}
+
 export function getLibraryNameSet() {
   const set = new Set();
   Object.values(EXERCISE_LIBRARY).forEach(arr => arr.forEach(n => set.add(n.toLowerCase())));

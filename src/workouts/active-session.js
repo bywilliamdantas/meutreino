@@ -5,7 +5,7 @@ import { haptic, prefersReducedMotion } from "../utils/dom.js";
 import { fmtClock, fmtDuration, todayKey } from "../utils/format.js";
 import { newSessionId } from "../utils/ids.js";
 import { render } from "../views/render.js";
-import { sessionsFor } from "./sessions.js";
+import { sessionsFor, stampSnapshot } from "./sessions.js";
 import { workoutLabel } from "./workouts.js";
 
 export function activeElapsedMs() {
@@ -62,6 +62,7 @@ export function endActiveSession() {
   let target = arr.find(s => s.letter === letter && !s.endedAt);
   const now = Date.now();
   if (target) {
+    stampSnapshot(target);
     target.endedAt = now;
     if (!target.startedAt) target.startedAt = now - totalMs;
   } else {

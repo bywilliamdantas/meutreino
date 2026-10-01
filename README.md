@@ -149,6 +149,25 @@ ainda funciona, só aparece sem ícone próprio na tela de início do iPhone.
 
 ## Novidades desta versão
 
+**Rodada 10 (v8.1) — ajustes de treino, histórico e telas**
+- **Treinos anteriores preservados**: sessões já registradas (finalizadas ou de
+  dias anteriores) mostram exatamente as séries que foram salvas. Mudar séries,
+  apagar ou adicionar exercícios no treino depois **não altera** o histórico.
+  Cada sessão guarda uma "foto" do treino (`snapshot`: nome, tipo e metas), e
+  sessões antigas ganham essa foto automaticamente ao carregar (o `log` das
+  séries nunca é modificado). Trocar a letra de um treino já registrado fica
+  bloqueado, para não misturar séries.
+- **Cardio na lista de exercícios**: novo grupo *Cardio* (Esteira, Bicicleta,
+  Escada, Elíptico, Remo ergômetro etc.). Ao escolher um deles o exercício já
+  entra como tipo *Cardio* (registro em minutos).
+- **Página inicial** sem *Último recorde*, *Registrar peso* e *Ver histórico*.
+- **Botões Iniciar / Detalhes** com o mesmo tamanho.
+- **Histórico › Sessões do mês** compacto: resumo do mês (dias · treinos ·
+  tempo), linhas menores, mostra as 5 mais recentes com "Ver todas".
+- **Ajustes**: *Sobre o app* virou seção independente (Conta › Treino ›
+  Aparência › Dados e backup › Sobre o app).
+- **Login**: copyright discreto no rodapé da tela.
+
 **Rodada 9 (v8.0) — ajustes no login**
 - **Logo da tela de login** agora usa o mesmo arquivo do ícone do app
   (`public/icons/logo.png`), em vez do desenho SVG antigo.

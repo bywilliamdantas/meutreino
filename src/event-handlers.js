@@ -177,21 +177,6 @@ export function attachHandlers() {
   if (perfilNotifBtn) perfilNotifBtn.addEventListener("click", () => goTab("ajustes"));
   const perfilSuporteBtn = $("perfilSuporteBtn");
   if (perfilSuporteBtn) perfilSuporteBtn.addEventListener("click", () => showToast("Fale com seu treinador para suporte"));
-  const qaWeight = $("qaWeight");
-  if (qaWeight) qaWeight.addEventListener("click", () => {
-    haptic(6);
-    openBodySheet();
-  });
-  const qaHistory = $("qaHistory");
-  if (qaHistory) qaHistory.addEventListener("click", () => {
-    haptic(6);
-    goTab("historico");
-  });
-  const goLastRecord = $("goLastRecord");
-  if (goLastRecord) goLastRecord.addEventListener("click", () => {
-    haptic(6);
-    goTab("progresso");
-  });
   document.querySelectorAll('[data-role="openhistoryday"]').forEach(el => {
     el.addEventListener("click", () => {
       haptic(6);
@@ -466,6 +451,13 @@ export function attachHandlers() {
   const calPrevBtn = $("calPrevBtn");
   if (calPrevBtn) calPrevBtn.addEventListener("click", () => {
     store.historyMonth.setMonth(store.historyMonth.getMonth() - 1);
+    store.historyExpanded = false;
+    render();
+  });
+  const monthSessionsToggle = $("monthSessionsToggle");
+  if (monthSessionsToggle) monthSessionsToggle.addEventListener("click", () => {
+    haptic(6);
+    store.historyExpanded = !store.historyExpanded;
     render();
   });
   const calNextBtn = $("calNextBtn");
@@ -474,6 +466,7 @@ export function attachHandlers() {
     const isCurrent = store.historyMonth.getFullYear() === todayD.getFullYear() && store.historyMonth.getMonth() === todayD.getMonth();
     if (isCurrent) return;
     store.historyMonth.setMonth(store.historyMonth.getMonth() + 1);
+    store.historyExpanded = false;
     render();
   });
   const reminderToggle = $("reminderToggle");

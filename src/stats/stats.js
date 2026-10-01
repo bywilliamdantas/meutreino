@@ -20,7 +20,7 @@ export function forEachLoggedSet(cb) {
       Object.keys(sess.log || {}).forEach(exId => {
         const arr = sess.log[exId];
         if (!Array.isArray(arr)) return;
-        const ex = findExercise(exId);
+        const ex = findExercise(exId) || (Array.isArray(sess.snapshot) ? sess.snapshot.find(e => e.id === exId) : null);
         arr.forEach(s => cb(s, k, ex, sess));
       });
     });

@@ -1,6 +1,6 @@
 export const STORAGE_KEY = "gym-data",
   THEME_KEY = "gym-theme",
-  APP_VERSION = "v8.0",
+  APP_VERSION = "v8.1",
   SCHEMA_VERSION = 3,
   AUTOBACKUP_KEY = "gym-autobackups",
   TABS = ["inicio", "treinos", "historico", "progresso", "ajustes"],

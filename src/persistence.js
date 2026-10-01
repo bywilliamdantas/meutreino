@@ -1,6 +1,6 @@
 import { storageKey } from "./config.js";
 import { initExIdCounter, initRestCounter } from "./counters.js";
-import { migrateActiveSession, migrateSessions, migrateSettings, migrateWorkouts } from "./data-migrations.js";
+import { migrateActiveSession, migrateSessionSnapshots, migrateSessions, migrateSettings, migrateWorkouts } from "./data-migrations.js";
 import { store } from "./store.js";
 import { showToast } from "./ui/toast.js";
 
@@ -42,6 +42,7 @@ export async function loadData() {
         migrateSettings(store.data);
         migrateActiveSession(store.data);
         migrateWorkouts(store.data);
+        migrateSessionSnapshots(store.data);
       }
     }
     store.loadFailed = false;

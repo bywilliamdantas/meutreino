@@ -46,6 +46,7 @@ export function renderLogin() {
       Ainda não tem uma conta?<br>
       <a href="#" id="loginHelpLink">Fale com o seu treinador</a>
     </div>
+    <div class="login-copyright">© 2026 William Dantas · Todos os direitos reservados</div>
   </div>`;
   const userInput = document.getElementById("loginUser");
   const passInput = document.getElementById("loginPass");

@@ -55,6 +55,42 @@ export function migrateSessions(s) {
   });
 }
 
+/* Treinos já registrados ganham uma "foto" do treino (nomes e tipos) para que
+   editar ou apagar exercícios depois não mude o que foi salvo. O log (séries)
+   nunca é tocado aqui. */
+export function migrateSessionSnapshots(s) {
+  if (!s.sessions || !s.workouts) return;
+  Object.keys(s.sessions).forEach(k => {
+    const arr = s.sessions[k];
+    if (!Array.isArray(arr)) return;
+    arr.forEach(sess => {
+      if (!sess || sess.snapshot || !sess.log) return;
+      const ids = new Set(Object.keys(sess.log).filter(id => Array.isArray(sess.log[id]) && sess.log[id].length));
+      if (!ids.size) return;
+      const w = s.workouts[sess.letter];
+      if (!w || w.isRest) return;
+      const snap = (w.exercises || []).filter(ex => ids.has(ex.id)).map(ex => ({
+        id: ex.id,
+        name: ex.name || "",
+        type: ex.type || "strength",
+        ...(ex.sets !== undefined ? {
+          sets: ex.sets
+        } : {}),
+        ...(ex.reps !== undefined ? {
+          reps: ex.reps
+        } : {}),
+        ...(ex.rest !== undefined ? {
+          rest: ex.rest
+        } : {}),
+        ...(ex.mins !== undefined ? {
+          mins: ex.mins
+        } : {})
+      }));
+      if (snap.length) sess.snapshot = snap;
+    });
+  });
+}
+
 export function migrateSettings(s) {
   if (!s.settings) s.settings = {};
   const d = {
