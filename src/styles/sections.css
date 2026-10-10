@@ -25,6 +25,7 @@
     width:34px;height:34px;border-radius:var(--r-sm);
     display:flex;align-items:center;justify-content:center;
     font-weight:800; font-size:15px; color:#fff; flex-shrink:0;
+    background:var(--tone);
   }
   .workout-title-input{
     flex:1; background:none;

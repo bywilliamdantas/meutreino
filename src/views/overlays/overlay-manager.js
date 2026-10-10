@@ -7,6 +7,7 @@ import { flushAutoSave, renderDayOverlay } from "./day-overlay.js";
 import { renderDaySessionsOverlay } from "./day-sessions-overlay.js";
 import { renderImportChoiceOverlay } from "./import-choice-overlay.js";
 import { renderExercisePickerOverlay, renderPickerOverlay } from "./picker-overlay.js";
+import { renderPinOverlay } from "../pin-view.js";
 import { renderProgressOverlay } from "./progress-overlay.js";
 
 export function openProgressSheet(exId, name) {
@@ -55,7 +56,8 @@ export function openExercisePicker(opts) {
     exId: opts.exId || null,
     query: "",
     selected: new Set(),
-    customChecked: false
+    customChecked: false,
+    customGroup: ""
   };
   renderOverlay();
 }
@@ -94,4 +96,5 @@ export function renderOverlay() {
   if (store.overlay.type === "exercisePicker") return renderExercisePickerOverlay(root);
   if (store.overlay.type === "body") return renderBodyOverlay(root);
   if (store.overlay.type === "backups") return renderBackupsOverlay(root);
+  if (store.overlay.type === "pin") return renderPinOverlay(root);
 }

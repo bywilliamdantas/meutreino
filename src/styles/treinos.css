@@ -22,6 +22,7 @@
   .wl-icon{
     width:44px; height:44px; border-radius:12px; flex-shrink:0;
     display:flex; align-items:center; justify-content:center;
+    background:var(--tone-soft); color:var(--tone);
   }
   .wl-info{ flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; }
   .wl-name{ font-size:15px; font-weight:700; color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -74,6 +75,7 @@
   .ex-thumb{
     width:30px; height:30px; border-radius:9px; flex-shrink:0;
     display:flex; align-items:center; justify-content:center;
+    background:var(--tone-soft); color:var(--tone);
   }
   .ex-thumb-sm{ width:26px; height:26px; border-radius:8px; }
   .progress-btn, .ex-del{
@@ -166,7 +168,8 @@
 
   .legend{ display:flex; flex-wrap:wrap; gap:10px; margin-bottom:var(--s5); }
   .legend-item{ display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--text-label); }
-  .legend-dot{ width:9px;height:9px;border-radius:50%; }
+  .legend-dot{ width:9px;height:9px;border-radius:50%; background:var(--tone); }
+  .legend-dot.off{ background:var(--dot-off); }
 
   .cal-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--s3); }
   .cal-month-label{ font-size:15px; font-weight:700; text-transform:capitalize; }
@@ -192,6 +195,7 @@
   .cal-cell.filled{ font-weight:700; }
   .cal-cell.empty, .cal-cell.future{ background:transparent; pointer-events:none; }
   .cal-cell.future{ color:var(--text-muted); opacity:0.45; }
+  .cal-cell.toned{ background:var(--tone); color:#fff; }
   .cal-cell.today{ box-shadow:0 0 0 1.6px var(--accent); }
   .cal-cell:active:not(.empty):not(.future){ transform:scale(0.9); }
 
@@ -246,6 +250,9 @@
     box-shadow:var(--shadow-accent);
   }
   .footer-btn.primary:active{ opacity:0.9; }
+  .footer-btn.compact{ flex:none; padding:9px 14px; }
+  .footer-btn.mini{ flex:none; align-self:flex-start; padding:4px 10px; font-size:11px; margin-top:4px; }
+  .footer-btn.picker-confirm{ width:100%; margin-top:12px; }
   .footer-btn.loading{ opacity:0.6; pointer-events:none; }
   .footer-btn.success{ color:var(--ok); border-color:var(--ok-border); background:var(--ok-bg); box-shadow:none; }
   input[type=file]{ display:none; }
@@ -306,12 +313,16 @@
   .sheet.dragging{ animation:none; }
   .sheet-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--s4); }
   .sheet-date{ font-size:17px; font-weight:700; text-transform:capitalize; }
+  .sheet-date.confirm-msg{ font-size:16px; }
+  .import-note{ font-size:13px; color:var(--text-muted); margin:0 0 18px; line-height:1.5; }
+  .day-sessions-count{ font-size:12px; color:var(--text-muted); margin:0 0 12px; }
   .sheet-session-head{ margin-bottom:var(--s4); }
   .ssh-top{ display:flex; align-items:center; gap:10px; margin-bottom:var(--s4); }
   .ssh-badge{
     width:38px; height:38px; border-radius:var(--r-sm); flex-shrink:0;
     display:flex; align-items:center; justify-content:center;
     font-weight:800; font-size:15px; color:#fff;
+    background:var(--tone);
   }
   .ssh-titles{ flex:1; min-width:0; }
   .ssh-name{ font-size:17px; font-weight:800; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -323,6 +334,7 @@
     background:var(--surface-3); border:1px solid var(--card-border);
     color:var(--text-label); -webkit-appearance:none;
   }
+  .chip.on{ background:var(--tone); color:#fff; border-color:transparent; }
   .sheet-exercises{ display:flex; flex-direction:column; gap:10px; margin-bottom:var(--s4); }
   .sheet-ex-row{
     background:var(--surface-3); border:1px solid var(--card-border);
@@ -370,6 +382,7 @@
     border-radius:var(--r-sm); overflow:hidden;
     min-width:0;
   }
+  .step-group.compact{ max-width:140px; }
   .step-btn{
     width:32px;height:34px;border:none;background:none;
     color:var(--text-primary); font-size:16px; font-weight:600;
@@ -447,6 +460,8 @@
   .chart-wrap{ margin:0 -4px; }
 
   .reminder-row{ display:flex; align-items:center; justify-content:space-between; font-size:13.5px; gap:12px; }
+  .label-stack{ display:flex; flex-direction:column; gap:2px; }
+  .label-sub{ font-size:11px; color:var(--text-muted); }
   .reminder-time-row{
     display:flex; align-items:center; justify-content:space-between;
     font-size:13px; color:var(--text-muted);
@@ -463,6 +478,7 @@
     border:1px solid var(--card-border);
     border-radius:var(--r-sm); padding:3px;
   }
+  .theme-selector.compact{ max-width:150px; }
   .theme-opt{
     flex:1; padding:8px 12px; border-radius:8px;
     background:none; border:none;
@@ -493,6 +509,7 @@
     width:32px;height:32px;border-radius:9px;
     display:flex;align-items:center;justify-content:center;
     font-weight:800; font-size:13px; flex-shrink:0; color:#fff;
+    background:var(--tone);
   }
   .sheet-day-session .sds-info{ flex:1; min-width:0; }
   .sheet-day-session .sds-name{ font-size:13.5px; font-weight:700; }
@@ -553,6 +570,16 @@
     width:18px; height:18px; accent-color:var(--accent); flex-shrink:0;
   }
   .ex-picker-custom{ color:var(--accent); border-color:var(--accent-border); background:var(--accent-soft); }
+  .ex-picker-group-select{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:8px 14px; font-size:12.5px; font-weight:600; color:var(--text-muted);
+  }
+  .ex-picker-group-select select{
+    flex:1; max-width:60%; padding:8px; border-radius:var(--r-md);
+    background:var(--surface-3); border:1px solid var(--card-border);
+    color:var(--text-primary); font-size:13px; font-weight:600;
+  }
+  .ex-picker-group-select select:focus{ outline:none; border-color:var(--accent); }
   .ex-picker-empty{ text-align:center; font-size:12.5px; color:var(--text-muted); padding:20px 10px; }
 
   .sheet-picker{
@@ -569,6 +596,7 @@
     width:34px;height:34px;border-radius:10px;
     display:flex;align-items:center;justify-content:center;
     font-weight:800; font-size:14px; flex-shrink:0; color:#fff;
+    background:var(--tone);
   }
   .sheet-picker-item .spi-name{
     font-size:14px; font-weight:700; flex:1; min-width:0;

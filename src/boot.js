@@ -1,11 +1,14 @@
-import { enforceSessionExpiry, readSession } from "./auth/session.js";
-import { takeAutoBackup } from "./backup/auto-backup.js";
+import { enforceSessionExpiry, readSession, touchSession } from "./auth/session.js";
+import { refreshBackupInfo, takeAutoBackup } from "./backup/auto-backup.js";
 import { requestPersistentStorage } from "./backup/storage-status.js";
+import { initAudioUnlock } from "./audio/beep.js";
 import { storageKey } from "./config.js";
 import { loadData, persist, storageAvailable } from "./persistence.js";
 import { checkReminder } from "./reminders.js";
 import { getTabFromHash, initRouter } from "./router.js";
 import { store } from "./store.js";
+import { loadAvatarIntoStore } from "./storage/avatar.js";
+import { migrateLegacyStorage } from "./storage/legacy-migration.js";
 import { applyTheme, getThemePref } from "./theme.js";
 import { showToast } from "./ui/toast.js";
 import { backgroundUpdateCheck, checkForUpdate, reloadOnce } from "./update/sw-update.js";
@@ -21,7 +24,10 @@ export async function bootApp() {
   const app = document.getElementById("app");
   if (app) app.innerHTML = `<div class="loading">carregando…</div>`;
   await loadData();
-  takeAutoBackup(false);
+  await migrateLegacyStorage();
+  await loadAvatarIntoStore();
+  await refreshBackupInfo();
+  await takeAutoBackup(false);
   render();
   requestPersistentStorage();
   if (store.data.settings.restTimerActive) {
@@ -39,6 +45,7 @@ export async function bootApp() {
    INIT
    ============================================================ */
 (async function init() {
+  initAudioUnlock();
   applyTheme(getThemePref());
   initRouter();
   if (!storageAvailable()) {
@@ -50,6 +57,7 @@ export async function bootApp() {
   }
   store.currentUser = readSession();
   if (store.currentUser) {
+    touchSession(true);
     store.activeTab = getTabFromHash() || "inicio";
     await bootApp();
   } else {
@@ -59,6 +67,7 @@ export async function bootApp() {
     if (document.visibilityState === "visible" && store.currentUser) {
       enforceSessionExpiry();
       if (!store.currentUser) return;
+      touchSession();
       checkReminder();
       renderRestTimer();
       renderHeroClock();

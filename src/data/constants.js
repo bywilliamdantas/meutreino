@@ -1,7 +1,13 @@
 export const STORAGE_KEY = "gym-data",
   THEME_KEY = "gym-theme",
-  APP_VERSION = "v8.1",
-  SCHEMA_VERSION = 3,
+  APP_VERSION = "v8.5",
+  /* Sessão: só expira após N dias sem abrir o app (ou ao tocar em Sair). */
+  SESSION_IDLE_DAYS = 30,
+  SESSION_IDLE_OPTIONS = [7, 14, 30, 60, 90],
+  /* 4 = foto de perfil e backups automáticos moram no IndexedDB;
+     settings.avatarUrl deixa de ser gravado no localStorage (continua aceito
+     na leitura e em arquivos exportados). Histórico/snapshot não mudaram. */
+  SCHEMA_VERSION = 4,
   AUTOBACKUP_KEY = "gym-autobackups",
   TABS = ["inicio", "treinos", "historico", "progresso", "ajustes"],
   KG_PER_LB = 0.45359237,

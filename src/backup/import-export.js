@@ -7,11 +7,12 @@ import { showToast } from "../ui/toast.js";
 import { todayKey } from "../utils/format.js";
 import { render } from "../views/render.js";
 import { sessionsFor } from "../workouts/sessions.js";
+import { adoptInlineAvatar } from "../storage/avatar.js";
 import { takeAutoBackup } from "./auto-backup.js";
 import { deliverFile } from "./validate.js";
 
 export async function mergeImportData(parsed) {
-  takeAutoBackup(true);
+  await takeAutoBackup(true);
   migrateSessions(parsed);
   migrateSettings(parsed);
   migrateActiveSession(parsed);
@@ -40,7 +41,7 @@ export async function mergeImportData(parsed) {
 }
 
 export async function replaceImportData(parsed, msg) {
-  takeAutoBackup(true);
+  await takeAutoBackup(true);
   store.data = {
     ...store.data,
     ...parsed
@@ -59,6 +60,7 @@ export async function replaceImportData(parsed, msg) {
     startedDate: null
   };
   store.data.settings.restTimerActive = null;
+  await adoptInlineAvatar(store.data);
   initExIdCounter();
   initRestCounter();
   store.overlay = null;
@@ -69,7 +71,8 @@ export async function replaceImportData(parsed, msg) {
 
 export async function exportBackup() {
   try {
-    const data = JSON.stringify(store.data, null, 2);
+    const out = { ...store.data, settings: { ...store.data.settings, avatarUrl: store.data.settings.avatarUrl || store.avatarUrl || null } };
+    const data = JSON.stringify(out, null, 2);
     const res = await deliverFile(data, `meus-treinos-backup-${todayKey()}.json`, "application/json", "Backup Meus Treinos");
     if (res === "cancelled") return;
     store.data.settings.lastBackupAt = new Date().toISOString();

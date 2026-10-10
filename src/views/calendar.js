@@ -1,7 +1,7 @@
 import { MONTH_NAMES_FULL } from "../data/constants.js";
 import { ICONS } from "../data/icons.js";
 import { store } from "../store.js";
-import { colorFor } from "../ui/helpers.js";
+import { colorFor, toneVars } from "../ui/helpers.js";
 import { escapeAttr } from "../utils/dom.js";
 import { dateKeyFromDate, todayKey } from "../utils/format.js";
 import { sessionsFor } from "../workouts/sessions.js";
@@ -29,14 +29,15 @@ export function buildMonthCalendar(monthDate) {
     const letter = count ? arr[arr.length - 1].letter : null;
     const isToday = key === todayKey();
     const isFuture = d > todayD;
-    const style = letter ? `background:${colorFor(letter, store.data.order)};color:#fff` : "";
+    const toneAttr = letter ? ` style="${toneVars(colorFor(letter, store.data.order))}"` : "";
     const cls = "cal-cell" + (letter ? " filled" : "") + (isToday ? " today" : "") + (isFuture ? " future" : "");
+    const btnCls = cls + (letter ? " toned" : "");
     const label = `${day} de ${MONTH_NAMES_FULL[month]}${count ? " — " + count + " treino(s)" : isFuture ? "" : " — sem treino"}`;
     const badge = count > 1 ? `<span class="cal-badge">${count}x</span>` : "";
     if (isFuture) {
       cells += `<div class="${cls}" aria-label="${escapeAttr(label)}"><span>${day}</span></div>`;
     } else {
-      cells += `<button class="${cls}" style="${style}" data-role="calday" data-key="${key}" aria-label="${escapeAttr(label)}"><span>${day}</span>${badge}</button>`;
+      cells += `<button class="${btnCls}"${toneAttr} data-role="calday" data-key="${key}" aria-label="${escapeAttr(label)}"><span>${day}</span>${badge}</button>`;
     }
   }
   const totalCells = startWeekday + daysInMonth;

@@ -1,6 +1,7 @@
 import { EX_CATEGORY_RULES } from "../data/exercise-category-rules.js";
 import { ICONS } from "../data/icons.js";
 import { isCardio } from "../utils/numbers.js";
+import { toneVars } from "../ui/helpers.js";
 
 export function exerciseVisual(ex) {
   if (isCardio(ex)) return {
@@ -23,5 +24,5 @@ export function exerciseVisual(ex) {
 export function exThumbHtml(ex, size) {
   const v = exerciseVisual(ex);
   const cls = size === "sm" ? "ex-thumb ex-thumb-sm" : "ex-thumb";
-  return `<span class="${cls}" style="background:${v.color}1f;color:${v.color}">${v.icon}</span>`;
+  return `<span class="${cls}" style="${toneVars(v.color, "1f")}">${v.icon}</span>`;
 }

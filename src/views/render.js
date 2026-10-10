@@ -1,4 +1,3 @@
-import { readAutoBackups } from "../backup/auto-backup.js";
 import { storageStatusText } from "../backup/storage-status.js";
 import { REST_COLOR } from "../config.js";
 import { APP_VERSION, MONTH_NAMES_FULL, WEEKDAY_FULL } from "../data/constants.js";
@@ -9,12 +8,12 @@ import { daysSince, exerciseHistory } from "../exercises/exercises.js";
 import { heroMuscleSvg } from "../icons-svg.js";
 import { store } from "../store.js";
 import { getThemePref } from "../theme.js";
-import { avatarInnerHtml, blockHeader, colorFor, userDisplayName } from "../ui/helpers.js";
+import { avatarInnerHtml, blockHeader, colorFor, toneVars, userDisplayName } from "../ui/helpers.js";
 import { escapeAttr, escapeHtml } from "../utils/dom.js";
 import { dateKeyFromDate, fmtDuration, fmtDurationShort, todayKey } from "../utils/format.js";
 import { isCardio } from "../utils/numbers.js";
 import { renderHeroClock, runCountUp, startHeroClockTicker, syncWakeLock } from "../workouts/active-session.js";
-import { computeStreak, isRestLetter, sessionsFor, sessionsThisMonth, sessionsThisWeek, totalDays, totalDurationForDay } from "../workouts/sessions.js";
+import { autoWeeklyGoal, computeWeeklyStreak, currentWeeklyGoal, isRestLetter, sessionsFor, sessionsThisMonth, sessionsThisWeek, totalDays, totalDurationForDay } from "../workouts/sessions.js";
 import { categoryForWorkout, estimateWorkoutMs, nextWorkoutLetter, workoutLabel } from "../workouts/workouts.js";
 import { renderBodyCard } from "./body-view.js";
 import { buildMonthCalendar } from "./calendar.js";
@@ -23,6 +22,10 @@ import { isLinkedNext } from "./overlays/day-overlay.js";
 import { renderOverlay } from "./overlays/overlay-manager.js";
 import { renderRestTimer } from "./overlays/rest-timer.js";
 import { renderRecordsCard, renderStatsCard } from "./stats-view.js";
+import { hasPin, pinSupported } from "../auth/pin.js";
+import { readIdleDays } from "../auth/session.js";
+import { SESSION_IDLE_OPTIONS } from "../data/constants.js";
+import { storageUsageHtml, refreshStorageUsage } from "./storage-usage-view.js";
 import { renderTabBar } from "./tabbar-view.js";
 
 /* ============================================================
@@ -41,7 +44,8 @@ export function render() {
   const hasActive = isRunning || isPaused;
   const todayArr = sessionsFor(todayKey());
   const todayCount = todayArr.length;
-  const streak = computeStreak();
+  const streak = computeWeeklyStreak();
+  const weeklyGoal = currentWeeklyGoal();
   const total = sessionsThisMonth();
   const thisWeek = sessionsThisWeek();
   const now = new Date();
@@ -114,12 +118,12 @@ export function render() {
     <div class="stat-card-v3 streak">
       <span class="stat-mini">${ICONS.flame}</span>
       <span class="stat-num" data-count="${streak}">0</span>
-      <span class="stat-label">dias seguidos</span>
+      <span class="stat-label">${streak === 1 ? "semana seguida" : "semanas seguidas"}</span>
     </div>
     <div class="stat-card-v3 week">
       <span class="stat-mini">${ICONS.calendarSmall}</span>
       <span class="stat-num" data-count="${thisWeek}">0</span>
-      <span class="stat-label">essa semana</span>
+      <span class="stat-label">de ${weeklyGoal} esta semana</span>
     </div>
     <div class="stat-card-v3 month">
       <span class="stat-mini">${ICONS.chart}</span>
@@ -147,7 +151,7 @@ export function render() {
   weekStart.setDate(now.getDate() - wOffset);
   weekStart.setHours(0, 0, 0, 0);
   let weekDotsHtml = `<div class="card week-dots-card">
-    <p class="section-title" style="margin:0 0 10px;">Essa semana</p>
+    <p class="section-title">Essa semana</p>
     <div class="week-dots">`;
   for (let i = 0; i < 7; i++) {
     const d = new Date(weekStart);
@@ -173,7 +177,7 @@ export function render() {
     const color = colorFor(key, store.data.order);
     return `<div class="card workout-card" data-letter="${key}">
       <div class="workout-head">
-        <div class="workout-chip" style="background:${color}">${w.isRest ? ICONS.moonSmall : key}</div>
+        <div class="workout-chip" style="${toneVars(color)}">${w.isRest ? ICONS.moonSmall : key}</div>
         <input class="workout-title-input" data-role="wname" data-letter="${key}" value="${escapeAttr(w.name)}" placeholder="${w.isRest ? "Nome do descanso" : "Nome do treino"}" aria-label="Nome de ${w.isRest ? "descanso" : "treino " + key}">
         <span class="edit-pencil">${ICONS.pencil}</span>
         ${w.isRest ? "" : `<button class="icon-btn" data-role="dupworkout" data-letter="${key}" aria-label="duplicar treino ${key}">${ICONS.copy}</button>`}
@@ -251,7 +255,7 @@ export function render() {
       const metaTxt = w.isRest ? "Dia de descanso" : `${estMs ? fmtDuration(estMs) + " · " : ""}${w.exercises.length} exercício${w.exercises.length === 1 ? "" : "s"}`;
       const doneToday = key === lastDoneLetter;
       workoutsHtml += `<div class="workout-list-card" data-role="openworkout" data-letter="${key}" role="button" tabindex="0">
-        <span class="wl-icon" style="background:${color}22;color:${color}">${w.isRest ? ICONS.moonSmall : ICONS.dumbbell}</span>
+        <span class="wl-icon" style="${toneVars(color, "22")}">${w.isRest ? ICONS.moonSmall : ICONS.dumbbell}</span>
         <span class="wl-info">
           <span class="wl-name">${escapeHtml(w.name)}</span>
           <span class="wl-meta">${metaTxt}</span>
@@ -274,9 +278,9 @@ export function render() {
   const hasRest = store.data.order.some(k => store.data.workouts[k]?.isRest);
   let historyHtml = `<div class="card">
     <div class="legend">
-      ${legendWorkouts.map(l => `<div class="legend-item"><span class="legend-dot" style="background:${colorFor(l, store.data.order)}"></span>${l}</div>`).join("")}
-      ${hasRest ? `<div class="legend-item"><span class="legend-dot" style="background:${REST_COLOR}"></span>descanso</div>` : ""}
-      <div class="legend-item"><span class="legend-dot" style="background:var(--dot-off)"></span>não treinou</div>
+      ${legendWorkouts.map(l => `<div class="legend-item"><span class="legend-dot" style="${toneVars(colorFor(l, store.data.order))}"></span>${l}</div>`).join("")}
+      ${hasRest ? `<div class="legend-item"><span class="legend-dot" style="${toneVars(REST_COLOR)}"></span>descanso</div>` : ""}
+      <div class="legend-item"><span class="legend-dot off"></span>não treinou</div>
     </div>
     ${buildMonthCalendar(store.historyMonth)}
   </div>`;
@@ -314,7 +318,7 @@ export function render() {
         <span class="ms-letters">${arr.map(s => {
         const isRest = isRestLetter(s.letter);
         const bg = s.letter && store.data.workouts[s.letter] && !isRest ? colorFor(s.letter, store.data.order) : REST_COLOR;
-        return `<span class="ms-chip" style="background:${bg}">${isRest ? ICONS.moonSmall : s.letter || "?"}</span>`;
+        return `<span class="ms-chip" style="${toneVars(bg)}">${isRest ? ICONS.moonSmall : s.letter || "?"}</span>`;
       }).join("")}</span>
         ${dur ? `<span class="ms-duration">${fmtDurationShort(dur)}</span>` : ""}
         <span class="ms-arrow">${ICONS.right}</span>
@@ -338,6 +342,25 @@ export function render() {
       </span>
       ${ICONS.right}
     </button>
+    <div class="card conta-extra">
+      ${pinSupported() ? `<button type="button" class="settings-row" id="pinRowBtn">
+        <span class="sr-icon">${ICONS.lock}</span>
+        <span class="sr-info">
+          <span class="sr-title">PIN de acesso</span>
+          <span class="sr-sub">${hasPin(store.currentUser.username) ? "Ativo — entre com 4 dígitos neste aparelho" : "Troque a senha por 4 dígitos neste aparelho"}</span>
+        </span>
+        <span class="sr-chevron">${ICONS.right}</span>
+      </button>` : ""}
+      <div class="idle-row">
+        <label class="reminder-row">
+          <span>Manter conectado por</span>
+          <select class="idle-select" id="idleDaysSelect" aria-label="Dias sem abrir o app até pedir login">
+            ${[...new Set([...SESSION_IDLE_OPTIONS, readIdleDays(store.currentUser.username)])].sort((a, b) => a - b).map(d => `<option value="${d}" ${d === readIdleDays(store.currentUser.username) ? "selected" : ""}>${d} dias</option>`).join("")}
+          </select>
+        </label>
+        <div class="idle-hint">Você só precisa entrar de novo se ficar esse tempo sem abrir o app, ou ao tocar em Sair. Não pede login na virada do dia nem no meio de um treino.</div>
+      </div>
+    </div>
 
     ${blockHeader("Treino")}
     <div class="card">
@@ -348,26 +371,45 @@ export function render() {
           <span class="slider"></span>
         </span>
       </label>
-      <div class="reminder-time-row" id="reminderTimeRow" style="${r.enabled ? "" : "display:none;"}">
+      <div class="reminder-time-row${r.enabled ? "" : " hidden"}" id="reminderTimeRow">
         <span>Horário</span>
         <input type="time" id="reminderTime" value="${r.time}" aria-label="Horário do lembrete">
       </div>
-      <div class="reminder-row" style="margin-top:14px;">
+      <div class="reminder-row mt-14">
         <span>Duração do descanso padrão</span>
-        <div class="step-group" style="max-width:140px;">
+        <div class="step-group compact">
           <button class="step-btn" id="restMinus" aria-label="diminuir">−</button>
           <div class="step-value" id="restDurationVal">${store.data.settings.restDuration}s</div>
           <button class="step-btn" id="restPlus" aria-label="aumentar">+</button>
         </div>
       </div>
-      <div class="reminder-row" style="margin-top:14px;">
+      <div class="reminder-row mt-14">
         <span>Semana começa na segunda</span>
         <span class="switch">
           <input type="checkbox" id="weekStartToggle" ${store.data.settings.weekStartsMonday ? "checked" : ""} aria-label="Semana começa na segunda">
           <span class="slider"></span>
         </span>
       </div>
-      <div class="reminder-row" style="margin-top:14px;">
+      <div class="reminder-row mt-14">
+        <div class="label-stack">
+          <span>Meta semanal</span>
+          <span class="label-sub">treinos por semana · padrão do ciclo: ${autoWeeklyGoal()}</span>
+          <button type="button" class="footer-btn mini${store.data.settings.weeklyGoal == null ? " hidden" : ""}" id="weeklyGoalReset">Usar padrão</button>
+        </div>
+        <div class="step-group compact">
+          <button class="step-btn" id="weeklyGoalMinus" aria-label="diminuir meta semanal">−</button>
+          <div class="step-value" id="weeklyGoalVal">${currentWeeklyGoal()}</div>
+          <button class="step-btn" id="weeklyGoalPlus" aria-label="aumentar meta semanal">+</button>
+        </div>
+      </div>
+      <label class="reminder-row mt-14">
+        <span>Som ao fim do descanso</span>
+        <span class="switch">
+          <input type="checkbox" id="beepToggle" ${store.data.settings.beepEnabled !== false ? "checked" : ""} aria-label="Tocar um beep quando o descanso acabar">
+          <span class="slider"></span>
+        </span>
+      </label>
+      <div class="reminder-row mt-14">
         <span>Manter a tela ligada no treino</span>
         <span class="switch">
           <input type="checkbox" id="keepAwakeToggle" ${store.data.settings.keepAwake ? "checked" : ""} aria-label="Manter a tela ligada durante o treino">
@@ -378,7 +420,7 @@ export function render() {
 
     ${blockHeader("Aparência")}
     <div class="card">
-      <div class="reminder-row" style="margin-bottom:14px;">
+      <div class="reminder-row mb-14">
         <span>Tema</span>
       </div>
       <div class="theme-selector">
@@ -386,9 +428,9 @@ export function render() {
         <button class="theme-opt ${themePref === "dark" ? "active" : ""}" data-role="settheme" data-theme="dark">${ICONS.moonSmall} Escuro</button>
         <button class="theme-opt ${themePref === "auto" ? "active" : ""}" data-role="settheme" data-theme="auto">${ICONS.autoSmall} Auto</button>
       </div>
-      <div class="reminder-row" style="margin-top:14px;">
+      <div class="reminder-row mt-14">
         <span>Unidade de peso</span>
-        <div class="theme-selector" style="max-width:150px;">
+        <div class="theme-selector compact">
           <button class="theme-opt ${store.data.settings.unit === "kg" ? "active" : ""}" data-role="setunit" data-unit="kg">kg</button>
           <button class="theme-opt ${store.data.settings.unit === "lb" ? "active" : ""}" data-role="setunit" data-unit="lb">lb</button>
         </div>
@@ -397,7 +439,7 @@ export function render() {
 
     ${blockHeader("Dados e backup")}
     <button type="button" class="card conta-row" id="openDadosBackupBtn">
-      <span class="conta-avatar" style="background:var(--surface-3);color:var(--text-primary);">${ICONS.download}</span>
+      <span class="conta-avatar neutral">${ICONS.download}</span>
       <span class="conta-info">
         <span class="conta-name">Dados e backup</span>
         <span class="conta-username">Último backup: ${bkTxt}</span>
@@ -408,16 +450,16 @@ export function render() {
     ${blockHeader("Sobre o app")}
     <div class="card">
       <div class="reminder-row">
-        <div style="display:flex;flex-direction:column;gap:2px;">
+        <div class="label-stack">
           <span>Versão do aplicativo</span>
-          <span id="appVersionText" style="font-size:11px;color:var(--text-muted);">${APP_VERSION}</span>
+          <span id="appVersionText" class="label-sub">${APP_VERSION}</span>
         </div>
-        <button class="footer-btn" id="checkUpdateBtn" style="flex:none;padding:9px 14px;">
+        <button class="footer-btn compact" id="checkUpdateBtn">
           <span id="checkUpdateIcon">${ICONS.refresh}</span>
           <span id="checkUpdateLabel">Atualizar</span>
         </button>
       </div>
-      <div class="reminder-row" style="margin-top:14px;">
+      <div class="reminder-row mt-14">
         <span>Último backup exportado</span>
         <span class="status-pill">${bkTxt}</span>
       </div>
@@ -425,10 +467,10 @@ export function render() {
     <div class="app-footer">William Dantas - ©2026</div>`;
 
   /* -------- dados e backup -------- */
-  const backupCount = readAutoBackups().length;
+  const backupCount = store.backupCount;
   const storageLabel = storageStatusText();
   const dadosBackupHtml = `<button type="button" class="back-link" id="dadosBackupBackBtn">${ICONS.left} Ajustes</button>
-    <h1 class="tab-title" style="margin-top:2px;">Dados e Backup</h1>
+    <h1 class="tab-title mt-2">Dados e Backup</h1>
 
     <div class="backup-hero">
       <span class="bh-icon">${ICONS.cloudCheck}</span>
@@ -438,8 +480,10 @@ export function render() {
       </span>
     </div>
 
+    ${storageUsageHtml()}
+
     <p class="settings-section">Gerenciar dados</p>
-    <div class="card" style="padding:0 var(--s4);">
+    <div class="card list">
       <button type="button" class="settings-row" id="exportBtn">
         <span class="sr-icon">${ICONS.download}</span>
         <span class="sr-info">
@@ -468,7 +512,7 @@ export function render() {
         <span class="sr-icon">${ICONS.info}</span>
         <span class="sr-info">
           <span class="sr-title">Backups automáticos</span>
-          <span class="sr-sub">${backupCount} cópia(s) neste aparelho</span>
+          <span class="sr-sub" id="autoBackupCountText">${backupCount} cópia(s) neste aparelho</span>
         </span>
         <span class="sr-chevron">${ICONS.right}</span>
       </button>
@@ -499,7 +543,7 @@ export function render() {
       </div>
       <div class="perfil-username">@${escapeHtml(store.currentUser.username)}</div>
       <div class="perfil-stats">
-        <div class="perfil-stat"><span class="perfil-stat-num" data-count="${streak}">0</span><span class="perfil-stat-label">dias seguidos</span></div>
+        <div class="perfil-stat"><span class="perfil-stat-num" data-count="${streak}">0</span><span class="perfil-stat-label">${streak === 1 ? "semana seguida" : "semanas seguidas"}</span></div>
         <div class="perfil-stat"><span class="perfil-stat-num" data-count="${thisWeek}">0</span><span class="perfil-stat-label">essa semana</span></div>
         <div class="perfil-stat"><span class="perfil-stat-num" data-count="${total}">0</span><span class="perfil-stat-label">no mês</span></div>
       </div>
@@ -535,4 +579,5 @@ export function render() {
   startHeroClockTicker();
   syncWakeLock();
   renderTabBar();
+  if (store.dadosBackupOpen && !store.perfilOpen) refreshStorageUsage();
 }

@@ -1,3 +1,4 @@
+import { playBeep } from "../../audio/beep.js";
 import { restForExercise } from "../../exercises/exercises.js";
 import { persist } from "../../persistence.js";
 import { store } from "../../store.js";
@@ -26,7 +27,13 @@ export function stopRestTimer() {
   renderRestTimer();
 }
 
+/* Só apita se o descanso acabou agora: ao voltar para o app minutos depois,
+   um beep atrasado seria confuso (o toast e a vibração continuam como antes). */
+const BEEP_MAX_LATE_MS = 3000;
+
 export function finishRestTimer(root) {
+  const active = store.data.settings.restTimerActive;
+  const lateMs = active ? Date.now() - active.endsAt : 0;
   if (store.restTimerInterval) {
     clearInterval(store.restTimerInterval);
     store.restTimerInterval = null;
@@ -34,6 +41,7 @@ export function finishRestTimer(root) {
   store.data.settings.restTimerActive = null;
   persist();
   haptic([200, 100, 200]);
+  if (store.data.settings.beepEnabled !== false && lateMs < BEEP_MAX_LATE_MS) playBeep();
   if (typeof Notification !== "undefined" && Notification.permission === "granted") {
     try {
       new Notification("Descanso acabou", {
@@ -43,6 +51,41 @@ export function finishRestTimer(root) {
   }
   showToast("Descanso acabou — próxima série!");
   root.innerHTML = "";
+  applyRestLayout(root, false);
+}
+
+/* Posição do timer: acima da tab bar (que ele cobriria por inteiro) ou, com a folha
+   do dia aberta (a tab bar fica sob o fundo escuro), rente ao rodapé. A altura da
+   tab bar é medida, então acompanha safe-area e mudanças de tamanho. */
+const GAP_ABOVE_TABBAR = 8;
+const layoutCache = { on: false, bottom: "" };
+
+function restBottomValue() {
+  if (document.querySelector(".sheet-backdrop")) return "calc(10px + env(safe-area-inset-bottom))";
+  const bar = document.getElementById("tabBar");
+  const r = bar && bar.getBoundingClientRect();
+  if (!r || r.height <= 0) return "";
+  return Math.max(0, Math.round(document.documentElement.clientHeight - r.top + GAP_ABOVE_TABBAR)) + "px";
+}
+
+export function applyRestLayout(root, active) {
+  const html = document.documentElement;
+  if (!active) {
+    if (layoutCache.on) html.classList.remove("rest-on");
+    root.style.removeProperty("--rest-bottom");
+    layoutCache.on = false;
+    layoutCache.bottom = "";
+    return;
+  }
+  if (!layoutCache.on) {
+    html.classList.add("rest-on");
+    layoutCache.on = true;
+  }
+  const bottom = restBottomValue();
+  if (bottom !== layoutCache.bottom) {
+    layoutCache.bottom = bottom;
+    if (bottom) root.style.setProperty("--rest-bottom", bottom);else root.style.removeProperty("--rest-bottom");
+  }
 }
 
 export function buildRestTimerDom(root, C) {
@@ -83,6 +126,7 @@ export function renderRestTimer() {
   const t = store.data.settings.restTimerActive;
   if (!t) {
     root.innerHTML = "";
+    applyRestLayout(root, false);
     if (store.restTimerInterval) {
       clearInterval(store.restTimerInterval);
       store.restTimerInterval = null;
@@ -97,6 +141,7 @@ export function renderRestTimer() {
   }
   const C = 2 * Math.PI * 18;
   if (!root.firstElementChild) buildRestTimerDom(root, C);
+  applyRestLayout(root, true);
   const timeEl = document.getElementById("restTime");
   const txt = `${pad(Math.floor(remain / 60))}:${pad(remain % 60)}`;
   if (timeEl && timeEl.textContent !== txt) timeEl.textContent = txt;

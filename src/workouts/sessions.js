@@ -1,6 +1,6 @@
 import { store } from "../store.js";
-import { dateKeyFromDate, todayKey } from "../utils/format.js";
 import { isPerformed, isWork } from "../utils/numbers.js";
+import { defaultWeeklyGoal, resolveWeeklyGoal, weeklyStreak, weekSessionCount } from "./weekly-goal.js";
 
 export function sessionsFor(dateKey) {
   const v = store.data.sessions[dateKey];
@@ -29,6 +29,7 @@ export function snapshotExercises(letter, onlyIds) {
     if (ex.reps !== undefined) o.reps = ex.reps;
     if (ex.rest !== undefined) o.rest = ex.rest;
     if (ex.mins !== undefined) o.mins = ex.mins;
+    if (ex.group) o.group = ex.group;
     if (ex.ss) o.ss = true;
     if (ex.link) o.link = ex.link;
     return o;
@@ -98,17 +99,25 @@ export function dayHasTraining(dateKey) {
   return sessionsFor(dateKey).some(s => !isRestLetter(s.letter));
 }
 
-export function computeStreak() {
-  let cursor = new Date();
-  if (!dayHasTraining(todayKey())) {
-    cursor.setDate(cursor.getDate() - 1);
-  }
-  let streak = 0;
-  while (dayHasTraining(dateKeyFromDate(cursor))) {
-    streak++;
-    cursor.setDate(cursor.getDate() - 1);
-  }
-  return streak;
+/* Meta semanal padrão = treinos que não são descanso no ciclo. */
+export function autoWeeklyGoal() {
+  return defaultWeeklyGoal(store.data.order, isRestLetter);
+}
+
+/* Meta semanal efetiva (Ajustes → Treino) ou, se não definida, a padrão. */
+export function currentWeeklyGoal() {
+  return resolveWeeklyGoal(store.data.settings.weeklyGoal, store.data.order, isRestLetter);
+}
+
+/* Semanas seguidas em que a meta foi batida (descanso não conta; respeita weekStartsMonday). */
+export function computeWeeklyStreak() {
+  return weeklyStreak({
+    sessions: store.data.sessions,
+    goal: currentWeeklyGoal(),
+    now: new Date(),
+    mondayStart: !!store.data.settings.weekStartsMonday,
+    isRest: isRestLetter
+  });
 }
 
 export function totalSessions() {
@@ -134,19 +143,12 @@ export function sessionsThisMonth() {
 }
 
 export function sessionsThisWeek() {
-  const now = new Date();
-  const day = now.getDay();
-  const offset = store.data.settings.weekStartsMonday ? day === 0 ? 6 : day - 1 : day;
-  const start = new Date(now);
-  start.setDate(now.getDate() - offset);
-  start.setHours(0, 0, 0, 0);
-  let c = 0;
-  for (const key of Object.keys(store.data.sessions)) {
-    const [y, m, d] = key.split("-").map(Number);
-    const dt = new Date(y, m - 1, d);
-    if (dt >= start) c += sessionsFor(key).filter(s => !isRestLetter(s.letter)).length;
-  }
-  return c;
+  return weekSessionCount({
+    sessions: store.data.sessions,
+    now: new Date(),
+    mondayStart: !!store.data.settings.weekStartsMonday,
+    isRest: isRestLetter
+  });
 }
 
 export function sessionDurationMs(session) {

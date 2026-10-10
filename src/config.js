@@ -11,6 +11,14 @@ export function storageKey() {
   return store.currentUser ? `${STORAGE_KEY}:${store.currentUser.username}` : STORAGE_KEY;
 }
 
+/* Identificador do usuário atual nos bancos do IndexedDB (mesmo critério das
+   chaves do localStorage, só que sem prefixo). */
+export function userId() {
+  return store.currentUser ? store.currentUser.username : "_default";
+}
+
+/* Chave LEGADA: até a v8.1 os backups automáticos ficavam aqui. Hoje só é lida
+   pela migração para o IndexedDB (src/storage/legacy-migration.js). */
 export function autobackupKey() {
   return store.currentUser ? `${AUTOBACKUP_KEY}:${store.currentUser.username}` : AUTOBACKUP_KEY;
 }

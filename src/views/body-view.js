@@ -17,7 +17,7 @@ export function renderBodyCard() {
   const list = bodySorted();
   let inner;
   if (!list.length) {
-    inner = `<div class="sheet-empty" style="margin:0 0 12px;">Registre seu peso e medidas para acompanhar a evolução.</div>`;
+    inner = `<div class="sheet-empty">Registre seu peso e medidas para acompanhar a evolução.</div>`;
   } else {
     const withW = list.filter(e => e.weight != null);
     let head = "";
@@ -51,13 +51,13 @@ export function renderBodyCard() {
       BODY_MEASURES.forEach(ms => {
         if (e[ms.key] != null) bits.push(ms.label.toLowerCase() + " " + String(e[ms.key]).replace(".", ","));
       });
-      return `<div class="progress-row"><span>${d}/${m}</span><span style="flex:1;">${escapeHtml(bits.join(" · "))}</span><button class="sds-del" data-role="delbody" data-id="${e.id}" aria-label="remover registro">${ICONS.close}</button></div>`;
+      return `<div class="progress-row"><span>${d}/${m}</span><span class="grow">${escapeHtml(bits.join(" · "))}</span><button class="sds-del" data-role="delbody" data-id="${e.id}" aria-label="remover registro">${ICONS.close}</button></div>`;
     }).join("");
-    inner = `${head}${chart}${measures ? `<div class="body-measures">${measures}</div>` : ""}<div class="progress-list" style="margin-top:10px;">${recent}</div>`;
+    inner = `${head}${chart}${measures ? `<div class="body-measures">${measures}</div>` : ""}<div class="progress-list mt-10">${recent}</div>`;
   }
   return sectionHeader("body", "Corpo") + `<div class="card">
     ${inner}
-    <button class="add-workout-btn" id="openBodyBtn" style="margin-top:12px;">${ICONS.plus} Registrar peso / medidas</button>
+    <button class="add-workout-btn mt-12" id="openBodyBtn">${ICONS.plus} Registrar peso / medidas</button>
   </div>`;
 }
 

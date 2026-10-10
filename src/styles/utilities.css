@@ -1,0 +1,13 @@
+/* ============================================================
+   utilities.css — ajustes pontuais de espaçamento (carregado por último,
+   para vencer as regras de componente de mesma especificidade).
+   Só entra aqui o que é de fato um ajuste isolado; o resto vira classe
+   do componente.
+   ============================================================ */
+.m-0{ margin:0; }
+.mt-2{ margin-top:2px; }
+.mt-10{ margin-top:10px; }
+.mt-12{ margin-top:12px; }
+.mt-14{ margin-top:14px; }
+.mb-14{ margin-bottom:14px; }
+.grow{ flex:1; }

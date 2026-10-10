@@ -17,31 +17,8 @@
     font-size:15px; font-weight:800; cursor:pointer;
   }
 
-  /* Hero: card claro com imagem SVG lateral */
-  .hero-card-v2{
-    position:relative;
-    padding:20px;
-    overflow:hidden;
-    background:linear-gradient(135deg, #ffffff 0%, #fff0ea 55%, #f5eeff 100%);
-    border:1px solid var(--card-border);
-    color:var(--text-primary);
-    min-height:186px;
-  }
-  :root[data-theme="dark"] .hero-card-v2{
-    background:linear-gradient(135deg, #241a2e 0%, #1a1220 55%, #120c16 100%);
-    color:#fff;
-  }
-  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .hero-card-v2{
-    background:linear-gradient(135deg, #241a2e 0%, #1a1220 55%, #120c16 100%);
-    color:#fff;
-  } }
-  .hero-card-v2 .hero-muscle{
-    position:absolute; right:-10px; bottom:-14px;
-    width:170px; height:170px;
-    opacity:0.95;
-    pointer-events:none;
-    z-index:0;
-  }
+  /* Hero: o visual (tinta escura, anéis, sombra) mora em design.css */
+  .hero-card-v2{ position:relative; overflow:hidden; }
   .hero-v2-top{
     position:relative; z-index:1;
     display:flex; align-items:center; justify-content:space-between;
@@ -56,12 +33,7 @@
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
     max-width:70%;
   }
-  :root[data-theme="dark"] .hero-v2-badge{ background:rgba(255,90,54,0.18); }
-  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .hero-v2-badge{ background:rgba(255,90,54,0.18); } }
-  .hero-card-v2 .hero-clock{
-    flex:none;
-    background:rgba(255,90,54,0.1); border-color:rgba(255,90,54,0.24); color:var(--accent);
-  }
+  .hero-card-v2 .hero-clock{ flex:none; }
   .hero-v2-body{ position:relative; z-index:1; margin-bottom:18px; max-width:60%; }
   .hero-v2-name{ font-size:23px; font-weight:800; letter-spacing:-0.01em; margin-bottom:4px; line-height:1.2; font-family:var(--font-display); }
   .hero-v2-sub{ font-size:13px; color:var(--text-muted); }
@@ -140,6 +112,7 @@
   .stat-card-v3.streak .stat-mini{ color:var(--accent); opacity:0.85; }
 
   .week-dots-card{ margin-top:0; }
+  .week-dots-card .section-title{ margin:0 0 10px; }
   .week-dots{ display:flex; justify-content:space-between; gap:4px; }
   .week-dot-col{ flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; }
   .week-dot-label{ font-size:10px; color:var(--text-muted); font-weight:600; }

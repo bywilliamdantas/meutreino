@@ -2,7 +2,7 @@ import { MONTH_NAMES_FULL, WEEKDAY_FULL } from "../../data/constants.js";
 import { ICONS } from "../../data/icons.js";
 import { persist } from "../../persistence.js";
 import { store } from "../../store.js";
-import { colorFor } from "../../ui/helpers.js";
+import { colorFor, toneVars } from "../../ui/helpers.js";
 import { showToast } from "../../ui/toast.js";
 import { escapeHtml } from "../../utils/dom.js";
 import { fmtDuration } from "../../utils/format.js";
@@ -24,10 +24,10 @@ export function renderDaySessionsOverlay(root) {
   <div class="sheet" role="dialog" aria-modal="true">
     <div class="sheet-handle"></div>
     <div class="sheet-header">
-      <div class="sheet-date" style="text-transform:capitalize;">${escapeHtml(dateLabel)}</div>
+      <div class="sheet-date">${escapeHtml(dateLabel)}</div>
       <button class="icon-btn" id="sheetClose" aria-label="fechar">${ICONS.close}</button>
     </div>
-    <p style="font-size:12px;color:var(--text-muted);margin:0 0 12px;">${arr.length} treinos neste dia</p>
+    <p class="day-sessions-count">${arr.length} treinos neste dia</p>
     <div class="sheet-day-sessions">
       ${arr.map((sess, idx) => {
     const wk = store.data.workouts[sess.letter];
@@ -39,7 +39,7 @@ export function renderDaySessionsOverlay(root) {
     if (dur) metaBits.push(fmtDuration(dur));
     if (setsCount) metaBits.push(setsCount + " série(s)");
     return `<div class="sheet-day-session" role="button" data-role="opensession" data-sessionid="${sess.id}">
-          <div class="sds-chip" style="background:${colorFor(sess.letter, store.data.order)}">${isRest ? ICONS.moonSmall : sess.letter}</div>
+          <div class="sds-chip" style="${toneVars(colorFor(sess.letter, store.data.order))}">${isRest ? ICONS.moonSmall : sess.letter}</div>
           <div class="sds-info">
             <div class="sds-name">${escapeHtml(wk?.name || workoutLabel(sess.letter))}</div>
             <div class="sds-meta">${metaBits.join(" · ")}</div>

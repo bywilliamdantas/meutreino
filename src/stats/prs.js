@@ -91,27 +91,100 @@ export function lastWorkSets(exId, beforeKey) {
   return null;
 }
 
+/* Últimas `limit` sessões (da mais recente para a mais antiga) em que o exercício
+   teve séries de trabalho feitas, antes de `beforeKey`. Cada item traz as séries,
+   a data e o RPE anotado naquela sessão (sess.meta[exId].rpe), se existir. */
+export function recentWorkSessions(exId, beforeKey, limit = 3) {
+  const keys = Object.keys(store.data.sessions).filter(k => k < beforeKey).sort();
+  const out = [];
+  for (let i = keys.length - 1; i >= 0 && out.length < limit; i--) {
+    const arr = sessionsFor(keys[i]);
+    for (let j = arr.length - 1; j >= 0 && out.length < limit; j--) {
+      const sess = arr[j];
+      const raw = sess.log && sess.log[exId];
+      if (!Array.isArray(raw)) continue;
+      const sets = raw.filter(s => isWork(s) && isPerformed(s) && s.weight > 0);
+      if (!sets.length) continue;
+      const rpe = sess.meta && sess.meta[exId] && sess.meta[exId].rpe;
+      out.push({
+        date: keys[i],
+        sets,
+        rpe: rpe != null && !isNaN(rpe) ? Number(rpe) : null
+      });
+    }
+  }
+  return out;
+}
+
+/* Resumo de uma sessão: carga mais alta, reps mínimas nessa carga e melhor 1RM estimado. */
+function summarizeSession(item) {
+  const top = Math.max(...item.sets.map(s => s.weight));
+  const atTop = item.sets.filter(s => s.weight === top);
+  return {
+    top,
+    minReps: Math.min(...atTop.map(s => s.reps != null ? s.reps : 0)),
+    best1rm: Math.max(...item.sets.map(s => e1rm(s.weight, s.reps))),
+    rpe: item.rpe
+  };
+}
+
+/* Estagnação: 3 sessões seguidas em que as duas mais recentes não superaram (com 0,5% de
+   tolerância no 1RM estimado) a mais antiga das três. */
+export const STALL_SESSIONS = 3;
+export const DELOAD_FACTOR = 0.9;
+const STALL_TOLERANCE = 1.005;
+
+export function isStalled(summaries) {
+  if (summaries.length < STALL_SESSIONS) return false;
+  const [latest, middle, oldest] = summaries;
+  return latest.best1rm <= oldest.best1rm * STALL_TOLERANCE && middle.best1rm <= oldest.best1rm * STALL_TOLERANCE;
+}
+
 export function suggestNext(ex, beforeKey) {
   if (!ex || isCardio(ex)) return null;
   const target = parseInt(ex.reps, 10);
   if (!target) return null;
-  const sets = lastWorkSets(ex.id, beforeKey);
-  if (!sets) return null;
-  const top = Math.max(...sets.map(s => s.weight));
-  const atTop = sets.filter(s => s.weight === top);
-  const minReps = Math.min(...atTop.map(s => s.reps != null ? s.reps : 0));
-  if (minReps >= target) {
-    const next = fromDisp(roundToStep(toDisp(top) + weightStep(), 0.1));
+  const history = recentWorkSessions(ex.id, beforeKey, STALL_SESSIONS).map(summarizeSession);
+  if (!history.length) return null;
+  const last = history[0];
+  const step = weightStep();
+  const hitTarget = last.minReps >= target;
+
+  /* Estagnou em 3 sessões e a última ainda não bateu a meta de reps: deload de ~10%. */
+  if (!hitTarget && isStalled(history)) {
+    let next = roundToStep(toDisp(last.top) * DELOAD_FACTOR, step);
+    if (!(next < toDisp(last.top))) next = toDisp(last.top) - step;
+    next = fromDisp(Math.max(next, step));
     return {
       weight: next,
       reps: target,
-      text: `Sugestão: ${fmtW(next)} ${unit()} × ${target} (bateu ${target} reps)`
+      deload: true,
+      text: `Sugestão: deload ${fmtW(next)} ${unit()} × ${target} (~10% a menos; estagnou em ${STALL_SESSIONS} sessões)`
     };
   }
-  const reps = Math.min(target, minReps + 1);
+
+  if (hitTarget) {
+    /* RPE 10 = esforço máximo: segurar a carga; RPE ≤ 6 = sobrou muito: salto maior. */
+    if (last.rpe != null && last.rpe >= 10) {
+      return {
+        weight: last.top,
+        reps: target,
+        text: `Sugestão: ${fmtW(last.top)} ${unit()} × ${target} (RPE ${last.rpe}: repita a carga)`
+      };
+    }
+    const jump = last.rpe != null && last.rpe <= 6 ? step * 2 : step;
+    const next = fromDisp(roundToStep(toDisp(last.top) + jump, 0.1));
+    const why = last.rpe != null && last.rpe <= 6 ? `bateu ${target} reps, RPE ${last.rpe}: sobrou` : `bateu ${target} reps`;
+    return {
+      weight: next,
+      reps: target,
+      text: `Sugestão: ${fmtW(next)} ${unit()} × ${target} (${why})`
+    };
+  }
+  const reps = Math.min(target, last.minReps + 1);
   return {
-    weight: top,
+    weight: last.top,
     reps,
-    text: `Sugestão: ${fmtW(top)} ${unit()} × ${reps} (busque +1 rep)`
+    text: `Sugestão: ${fmtW(last.top)} ${unit()} × ${reps} (busque +1 rep)`
   };
 }

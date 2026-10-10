@@ -7,7 +7,7 @@ import { findExercise, lastLoggedValue, restForExercise } from "../../exercises/
 import { persist } from "../../persistence.js";
 import { checkPR, exercisePRs, suggestNext } from "../../stats/prs.js";
 import { store } from "../../store.js";
-import { colorFor } from "../../ui/helpers.js";
+import { colorFor, toneVars } from "../../ui/helpers.js";
 import { showToast } from "../../ui/toast.js";
 import { escapeAttr, escapeHtml, haptic, safeUrl } from "../../utils/dom.js";
 import { fmtClock, fmtDuration, fmtW, fromDisp, toDisp, todayKey, unit, weightStep } from "../../utils/format.js";
@@ -15,6 +15,7 @@ import { newSessionId } from "../../utils/ids.js";
 import { isCardio, isWork, parseNum, roundToStep } from "../../utils/numbers.js";
 import { activeElapsedMs, syncWakeLock } from "../../workouts/active-session.js";
 import { computeSessionIntensity, sessionDurationMs, sessionHasData, sessionsFor, snapshotExercise, stampSnapshot } from "../../workouts/sessions.js";
+import { previousSetValues, shouldStartRest } from "../../workouts/rest-rules.js";
 import { workoutLabel } from "../../workouts/workouts.js";
 import { render } from "../render.js";
 import { closeOverlay, renderOverlay } from "./overlay-manager.js";
@@ -230,7 +231,7 @@ export function renderDayOverlay(root) {
   const color = colorFor(letter, store.data.order);
   const sessionHeadHtml = `<div class="sheet-session-head">
     <div class="ssh-top">
-      <span class="ssh-badge" style="background:${color}">${w.isRest ? ICONS.moonSmall : letter}</span>
+      <span class="ssh-badge" style="${toneVars(color)}">${w.isRest ? ICONS.moonSmall : letter}</span>
       <div class="ssh-titles">
         <div class="ssh-name">${escapeHtml(w.name || workoutLabel(letter))}</div>
         <div class="ssh-date">${isToday ? "Hoje" : escapeHtml(dateLabel)}${hasActiveHere ? ` · <span class="ssh-live">em andamento</span>` : ""}</div>
@@ -252,7 +253,7 @@ export function renderDayOverlay(root) {
     const wk = store.data.workouts[k];
     const label = wk?.isRest ? "Desc." : k;
     const active = k === letter;
-    return `<button class="chip" data-role="sheetletter" data-letter="${k}" aria-pressed="${active}" style="${active ? `background:${colorFor(k, store.data.order)};color:#fff;border-color:transparent` : ""}">${label}</button>`;
+    return `<button class="chip${active ? " on" : ""}" data-role="sheetletter" data-letter="${k}" aria-pressed="${active}"${active ? ` style="${toneVars(colorFor(k, store.data.order))}"` : ""}>${label}</button>`;
   }).join("")}
     </div>
     ${hasExercises ? `<p class="sheet-hint">Toque no número da série para marcar aquecimento (A), drop set (D) ou até a falha (F). Aquecimento não entra nas estatísticas.</p>` : ""}
@@ -420,12 +421,28 @@ export function renderDayOverlay(root) {
         }
         if (ex && ex.ss) {
           if (!prMsg) showToast("Superset — vá para o próximo exercício");
-        } else {
+        } else if (shouldStartRest(ex, sets, setidx)) {
           startRestTimer(exid);
         }
       } else {
         haptic(6);
       }
+    });
+  });
+  root.querySelectorAll('[data-role="repeatprev"]').forEach(btn => {
+    btn.addEventListener("click", () => {
+      const exid = btn.dataset.exid;
+      const setidx = parseInt(btn.dataset.setidx, 10);
+      const sets = store.overlay.log[exid];
+      if (!sets || !sets[setidx]) return;
+      const ex = findExercise(exid);
+      const prev = previousSetValues(sets, setidx, ex ? setDefaults(ex, store.overlay.dateKey) : null);
+      if (!prev) return;
+      if (prev.weight != null) sets[setidx].weight = prev.weight;
+      if (prev.reps != null) sets[setidx].reps = prev.reps;
+      refreshSetInputs(root, exid, setidx);
+      haptic(8);
+      autoSaveOverlay();
     });
   });
   root.querySelectorAll('[data-role="applysuggest"]').forEach(btn => {
@@ -602,7 +619,7 @@ export function renderStrengthRow(ex, log, dateKey, linked) {
             <button class="step-btn" data-role="rplus" data-exid="${ex.id}" data-setidx="${i}" aria-label="aumentar reps">+</button>
           </div>
           <button class="sheet-set-check" data-role="toggleSet" data-exid="${ex.id}" data-setidx="${i}" aria-label="marcar série ${i + 1}">${ICONS.checkSm}</button>
-        </div>`;
+        </div>${i > 0 ? `<button type="button" class="set-repeat" data-role="repeatprev" data-exid="${ex.id}" data-setidx="${i}" aria-label="repetir peso e reps da série ${i}">${ICONS.refresh}<span>repetir anterior</span></button>` : ""}`;
   }).join("")}
     </div>
     ${exExtrasHtml(ex)}

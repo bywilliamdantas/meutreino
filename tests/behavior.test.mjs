@@ -137,6 +137,37 @@ if (MODE === "login") {
   $("#exPickerConfirm").click(); await wait(400);
   const exs = stored().workouts.B.exercises;
   check("2. exercícios de cardio entram com tipo cardio", exs.length === 2 && exs.every((e) => e.type === "cardio"), JSON.stringify(exs.map((e) => e.type)));
+
+  // 8. exercício fora da biblioteca: escolher o grupo muscular ao criar
+  $('[data-role="addex"]').click(); await wait();
+  const search = $("#exPickerSearch");
+  search.value = "Remada do meu jeito"; search.dispatchEvent(new window.Event("input", { bubbles: true })); await wait(100);
+  const sel = $("#exPickerGroup");
+  check("8. seletor de grupo aparece para nome fora da biblioteca", !!sel);
+  check("8. seletor não oferece Cardio e começa em 'Outros'", !!sel && sel.value === "" && ![...sel.options].some((o) => o.value === "Cardio"));
+  sel.value = "Costas / Dorsal"; sel.dispatchEvent(new window.Event("change", { bubbles: true }));
+  search.value = "Remada do meu jeito "; search.dispatchEvent(new window.Event("input", { bubbles: true })); await wait(100);
+  check("8. grupo escolhido sobrevive ao re-render da busca", $("#exPickerGroup").value === "Costas / Dorsal");
+  const cc = $("#exPickerCustomCheck");
+  cc.checked = true; cc.dispatchEvent(new window.Event("change", { bubbles: true }));
+  $("#exPickerConfirm").click(); await wait(400);
+  const custom = stored().workouts.B.exercises.find((e) => e.name === "Remada do meu jeito");
+  check("8. exercício próprio grava o grupo escolhido", !!custom && custom.group === "Costas / Dorsal", JSON.stringify(custom));
+
+  $('[data-role="addex"]').click(); await wait();
+  const search2 = $("#exPickerSearch");
+  search2.value = "Exercício sem grupo"; search2.dispatchEvent(new window.Event("input", { bubbles: true })); await wait(100);
+  const cc2 = $("#exPickerCustomCheck");
+  cc2.checked = true; cc2.dispatchEvent(new window.Event("change", { bubbles: true }));
+  $("#exPickerConfirm").click(); await wait(400);
+  const noGroup = stored().workouts.B.exercises.find((e) => e.name === "Exercício sem grupo");
+  check("8. sem escolher grupo, nada é gravado (continua em 'Outros')", !!noGroup && noGroup.group === undefined, JSON.stringify(noGroup));
+
+  $('[data-role="addex"]').click(); await wait();
+  const search3 = $("#exPickerSearch");
+  search3.value = "Esteira"; search3.dispatchEvent(new window.Event("input", { bubbles: true })); await wait(100);
+  check("8. nome da biblioteca não mostra o seletor de grupo", !$("#exPickerGroup"));
+  $("#sheetClose").click(); await wait();
 }
 check("sem erros de JavaScript", errors.length === 0, errors.join("\n"));
 process.exit(fails ? 1 : 0);

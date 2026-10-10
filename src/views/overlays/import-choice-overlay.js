@@ -16,13 +16,13 @@ export function renderImportChoiceOverlay(root) {
       <div class="sheet-date">Importar backup</div>
       <button class="icon-btn" id="sheetClose" aria-label="fechar">${ICONS.close}</button>
     </div>
-    <p style="font-size:13px;color:var(--text-muted);margin:0 0 18px;line-height:1.5;">
+    <p class="import-note">
       Este arquivo tem ${nTreinos} treino(s) e ${nSessoes} dia(s) registrado(s).
     </p>
     <div class="sheet-actions">
       <button class="cta-btn" id="importMergeBtn">Mesclar com os dados atuais</button>
       <button class="footer-btn danger" id="importReplaceBtn">${ICONS.trash} Substituir tudo</button>
-      <button class="undo-link" id="importCancelBtn" style="margin-top:2px;">cancelar</button>
+      <button class="undo-link mt-2" id="importCancelBtn">cancelar</button>
     </div>
   </div>`;
   document.getElementById("sheetBackdrop").addEventListener("click", closeOverlay);

@@ -4,6 +4,13 @@ import { ICONS } from "../data/icons.js";
 import { store } from "../store.js";
 import { escapeAttr, escapeHtml } from "../utils/dom.js";
 
+/* Cor que vem dos dados (letra do treino, categoria do exercício): só o VALOR
+   vai inline, como custom property; fundo/texto ficam no CSS (var(--tone),
+   var(--tone-soft)). `softAlpha` é o byte hex de transparência do fundo suave. */
+export function toneVars(color, softAlpha) {
+  return `--tone:${color}` + (softAlpha ? `;--tone-soft:${color}${softAlpha}` : "");
+}
+
 export function colorFor(key, order) {
   if (store.data.workouts[key]?.isRest) return REST_COLOR;
   const idx = order.indexOf(key);
@@ -20,7 +27,7 @@ export function userInitial() {
 }
 
 export function avatarInnerHtml(size) {
-  const url = store.data.settings.avatarUrl;
+  const url = store.avatarUrl;
   if (url) return `<img src="${escapeAttr(url)}" alt="" class="avatar-img">`;
   return `<span class="avatar-fallback">${escapeHtml(userInitial())}</span>`;
 }
@@ -36,7 +43,7 @@ export function sectionHeader(id, title, first, noToggle) {
   }
   const c = isCollapsed(id);
   return `<div class="section-title-row${first ? "" : " spaced"}">
-    <p class="section-title" style="margin:0;">${title}</p>
+    <p class="section-title m-0">${title}</p>
     <button type="button" class="toggle-visibility-btn" data-role="togglesection" data-section="${id}" aria-expanded="${c ? "false" : "true"}" aria-label="${c ? "mostrar" : "ocultar"} ${escapeAttr(title.toLowerCase())}">
       ${c ? ICONS.eyeOff + " Mostrar" : ICONS.eye + " Ocultar"}
     </button>

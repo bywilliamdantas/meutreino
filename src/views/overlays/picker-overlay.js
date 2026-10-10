@@ -2,10 +2,10 @@ import { newExId } from "../../counters.js";
 import { EXERCISE_LIBRARY } from "../../data/exercise-library.js";
 import { ICONS } from "../../data/icons.js";
 import { exThumbHtml } from "../../exercises/exercise-visuals.js";
-import { getAllExerciseNames, getCustomExerciseNames, isCardioName } from "../../exercises/exercises.js";
+import { SELECTABLE_GROUPS, customGroupFor, getAllExerciseNames, getCustomExerciseNames, getLibraryNameSet, isCardioName, isSelectableGroup } from "../../exercises/exercises.js";
 import { persist } from "../../persistence.js";
 import { store } from "../../store.js";
-import { colorFor } from "../../ui/helpers.js";
+import { colorFor, toneVars } from "../../ui/helpers.js";
 import { showToast } from "../../ui/toast.js";
 import { escapeAttr, escapeHtml, haptic } from "../../utils/dom.js";
 import { startActiveSession } from "../../workouts/active-session.js";
@@ -30,7 +30,7 @@ export function renderPickerOverlay(root) {
     const wk = store.data.workouts[k];
     const isRest = wk?.isRest;
     return `<button class="sheet-picker-item" data-role="pickletter" data-letter="${k}">
-          <div class="spi-chip" style="background:${colorFor(k, store.data.order)}">${isRest ? ICONS.moonSmall : k}</div>
+          <div class="spi-chip" style="${toneVars(colorFor(k, store.data.order))}">${isRest ? ICONS.moonSmall : k}</div>
           <div class="spi-name">${escapeHtml(wk?.name || workoutLabel(k))}</div>
         </button>`;
   }).join("")}
@@ -65,7 +65,7 @@ export function renderExercisePickerOverlay(root) {
     </div>
     <input type="text" id="exPickerSearch" class="ex-picker-search" placeholder="Buscar ou digitar um novo nome…" value="${escapeAttr(store.overlay.query)}" autocomplete="off" autocapitalize="sentences">
     <div class="ex-picker-list" id="exPickerList"></div>
-    ${mode === "add" ? `<button class="footer-btn primary" id="exPickerConfirm" style="width:100%;margin-top:12px;">Adicionar selecionados</button>` : ""}
+    ${mode === "add" ? `<button class="footer-btn primary picker-confirm" id="exPickerConfirm">Adicionar selecionados</button>` : ""}
   </div>`;
   document.getElementById("sheetBackdrop").addEventListener("click", closeOverlay);
   document.getElementById("sheetClose").addEventListener("click", closeOverlay);
@@ -88,8 +88,9 @@ export function renderExercisePickerOverlay(root) {
         return;
       }
       const w = store.data.workouts[store.overlay.letter];
+      const typedCustom = store.overlay.customChecked && q ? q.toLowerCase() : null;
       names.forEach(n => {
-        w.exercises.push({
+        const ex = {
           id: newExId(),
           name: n,
           sets: "",
@@ -97,7 +98,10 @@ export function renderExercisePickerOverlay(root) {
           rest: "",
           mins: "",
           type: isCardioName(n) ? "cardio" : "strength"
-        });
+        };
+        const group = groupForName(n, typedCustom && n.toLowerCase() === typedCustom);
+        if (group) ex.group = group;
+        w.exercises.push(ex);
       });
       haptic([10, 30, 10]);
       closeOverlay();
@@ -111,6 +115,29 @@ export function renderExercisePickerOverlay(root) {
       searchInput.focus();
     } catch (e) {}
   }, 50);
+}
+
+const qLower = () => (store.overlay && store.overlay.query || "").trim().toLowerCase();
+
+/* Grupo a gravar num exercício novo: nada se o nome é da biblioteca (ela já define o grupo);
+   senão a escolha feita no seletor (só vale para o nome digitado) ou o grupo já usado
+   em outro exercício próprio com o mesmo nome. */
+function groupForName(name, isTypedCustom) {
+  if (getLibraryNameSet().has(String(name).trim().toLowerCase())) return null;
+  const chosen = store.overlay && store.overlay.customGroup;
+  if (isTypedCustom && isSelectableGroup(chosen)) return chosen;
+  return customGroupFor(name);
+}
+
+function groupSelectHtml() {
+  const cur = store.overlay.customGroup || "";
+  return `<label class="ex-picker-group-select">
+    <span>Grupo muscular</span>
+    <select id="exPickerGroup" aria-label="Grupo muscular do novo exercício">
+      <option value="">Outros (sem grupo)</option>
+      ${SELECTABLE_GROUPS.map(g => `<option value="${escapeAttr(g)}" ${g === cur ? "selected" : ""}>${escapeHtml(g)}</option>`).join("")}
+    </select>
+  </label>`;
 }
 
 export function renderExercisePickerList() {
@@ -155,7 +182,10 @@ export function renderExercisePickerList() {
     const allNames = getAllExerciseNames();
     const filtered = allNames.filter(n => n.toLowerCase().includes(q));
     const exactMatch = allNames.some(n => n.toLowerCase() === q);
-    if (!exactMatch) html += customRowHtml();
+    if (!exactMatch) {
+      html += customRowHtml();
+      html += groupSelectHtml();
+    }
     filtered.forEach(n => {
       html += itemHtml(n);
     });
@@ -187,6 +217,10 @@ export function renderExercisePickerList() {
       });
     });
   });
+  const groupSel = document.getElementById("exPickerGroup");
+  if (groupSel) groupSel.addEventListener("change", e => {
+    store.overlay.customGroup = e.target.value;
+  });
   if (mode === "add") {
     const customCheck = document.getElementById("exPickerCustomCheck");
     if (customCheck) customCheck.addEventListener("change", e => {
@@ -207,6 +241,8 @@ export function renderExercisePickerList() {
         if (!ex) return;
         ex.name = name;
         if (isCardioName(name)) ex.type = "cardio";
+        const group = groupForName(name, name.toLowerCase() === qLower());
+        if (group) ex.group = group;else delete ex.group;
         haptic(6);
         closeOverlay();
         render();

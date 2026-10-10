@@ -75,7 +75,7 @@ export function updateSyncUI(s) {
   const text = document.getElementById("syncText");
   const retryBtn = document.getElementById("syncRetryBtn");
   dot.className = "sync-dot";
-  retryBtn.style.display = "none";
+  retryBtn.classList.add("hidden");
   if (s === "busy") {
     row.classList.remove("hidden");
     dot.classList.add("busy");
@@ -90,6 +90,6 @@ export function updateSyncUI(s) {
     row.classList.remove("hidden");
     dot.classList.add("err");
     text.textContent = s === "full" ? "armazenamento cheio" : "falha ao salvar";
-    retryBtn.style.display = "inline";
+    retryBtn.classList.remove("hidden");
   }
 }

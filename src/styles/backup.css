@@ -38,3 +38,52 @@
   .settings-row .sr-sub{ font-size:11.5px; color:var(--text-muted); margin-top:2px; }
   .settings-row .sr-chevron{ color:var(--text-muted); flex-shrink:0; display:flex; }
 
+
+  /* ---------- espaço em uso ---------- */
+  .usage-card{
+    background:var(--surface-2); border:1px solid var(--divider);
+    border-radius:var(--r-lg); padding:14px 16px; margin-bottom:var(--s4);
+  }
+  .usage-card.warn{ border-color:var(--accent-border); }
+  .usage-card.crit{ border-color:var(--danger-border); }
+  .usage-title{ font-size:15px; font-weight:800; margin-bottom:10px; }
+  .usage-sub{ font-size:12px; color:var(--text-muted); }
+  .usage-alert{
+    font-size:12.5px; line-height:1.45; font-weight:600;
+    border-radius:var(--r-sm); padding:10px 12px; margin-bottom:10px;
+  }
+  .usage-alert.warn{ background:var(--accent-soft); color:var(--accent); border:1px solid var(--accent-border); }
+  .usage-alert.crit{ background:var(--danger-bg); color:var(--danger); border:1px solid var(--danger-border); }
+  .usage-meter + .usage-meter{ margin-top:12px; }
+  .usage-row{ display:flex; justify-content:space-between; gap:8px; font-size:12px; margin-bottom:6px; }
+  .usage-label{ font-weight:700; color:var(--text-primary); }
+  .usage-val{ color:var(--text-muted); white-space:nowrap; }
+  .usage-bar{ height:8px; border-radius:99px; background:var(--surface-3); overflow:hidden; }
+  .usage-bar i{ display:block; height:100%; width:var(--pct); border-radius:99px; background:var(--ok); }
+  .usage-bar.warn i{ background:var(--accent); }
+  .usage-bar.crit i{ background:var(--danger); }
+  .usage-breakdown{ display:flex; flex-direction:column; gap:2px; font-size:11.5px; color:var(--text-muted); margin:8px 0 12px; }
+  .usage-breakdown b{ color:var(--text-secondary); font-weight:700; }
+  .usage-foot{ font-size:11px; color:var(--text-muted); margin-top:10px; line-height:1.45; }
+
+  /* ---------- conta: PIN e sessão ---------- */
+  .conta-extra{ padding:0 var(--s4); margin-top:var(--s3); }
+  .idle-row{ padding:14px 0; }
+  .idle-row .reminder-row{ margin:0; }
+  .idle-select{
+    font:inherit; font-weight:700; color:var(--text-primary);
+    background:var(--surface-3); border:1px solid var(--divider);
+    border-radius:var(--r-sm); padding:8px 10px;
+  }
+  .idle-hint{ font-size:11.5px; color:var(--text-muted); margin-top:8px; line-height:1.45; }
+  .pin-field{ display:flex; flex-direction:column; gap:6px; margin-bottom:12px; font-size:12.5px; font-weight:700; color:var(--text-label); }
+  .pin-field input{
+    font:inherit; font-size:16px; color:var(--text-primary); background:var(--surface-3);
+    border:1px solid var(--divider); border-radius:var(--r-sm); padding:12px;
+  }
+  .pin-field input.pin-digits{ letter-spacing:0.5em; text-align:center; font-weight:800; }
+  .pin-error{ min-height:18px; font-size:12.5px; font-weight:600; color:var(--danger); margin:2px 0 10px; }
+  .pin-note{ font-size:11.5px; color:var(--text-muted); line-height:1.5; margin:0 0 14px; }
+
+  .backups-note{ font-size:12.5px; color:var(--text-muted); margin:0 0 14px; line-height:1.5; }
+  .card.list{ padding:0 var(--s4); }

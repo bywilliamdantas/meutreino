@@ -1,4 +1,7 @@
-import { doLogout } from "./auth/session.js";
+import { playBeep, unlockAudio } from "./audio/beep.js";
+import { setAvatar } from "./storage/avatar.js";
+import { doLogout, hasActiveWorkout, writeIdleDays } from "./auth/session.js";
+import { openPinSheet } from "./views/pin-view.js";
 import { exportBackup, exportCsv } from "./backup/import-export.js";
 import { validateBackup } from "./backup/validate.js";
 import { newExId, newRestKey } from "./counters.js";
@@ -18,7 +21,8 @@ import { undoToday } from "./views/overlays/day-overlay.js";
 import { openConfirm, openDaySessionsSheet, openExercisePicker, openImportChoice, openProgressSheet, openWorkoutPicker } from "./views/overlays/overlay-manager.js";
 import { render } from "./views/render.js";
 import { cancelActiveSession, endActiveSession, pauseActiveSession, startActiveSession, syncWakeLock } from "./workouts/active-session.js";
-import { sessionsFor } from "./workouts/sessions.js";
+import { currentWeeklyGoal, sessionsFor } from "./workouts/sessions.js";
+import { MAX_WEEKLY_GOAL, MIN_WEEKLY_GOAL } from "./workouts/weekly-goal.js";
 import { nextAvailableLetter, nextWorkoutLetter, workoutLabel } from "./workouts/workouts.js";
 
 /* ============================================================
@@ -93,9 +97,19 @@ export function attachHandlers() {
   });
   const backupNowBtn = $("backupNowBtn");
   if (backupNowBtn) backupNowBtn.addEventListener("click", exportBackup);
+  const pinRowBtn = $("pinRowBtn");
+  if (pinRowBtn) pinRowBtn.addEventListener("click", () => {
+    haptic(6);
+    openPinSheet();
+  });
+  const idleDaysSelect = $("idleDaysSelect");
+  if (idleDaysSelect) idleDaysSelect.addEventListener("change", e => {
+    writeIdleDays(store.currentUser.username, parseInt(e.target.value, 10));
+    showToast(`Pede login após ${e.target.value} dias sem abrir`);
+  });
   const logoutBtn = $("logoutBtn");
   if (logoutBtn) logoutBtn.addEventListener("click", () => {
-    openConfirm("Sair da sua conta?", doLogout, {
+    openConfirm(hasActiveWorkout(store.currentUser.username) ? "Você tem um treino em andamento. Sair mesmo assim? Ele continua salvo." : "Sair da sua conta?", doLogout, {
       yesLabel: "Sair",
       noLabel: "Cancelar",
       yesStyle: "danger"
@@ -135,7 +149,7 @@ export function attachHandlers() {
       if (!file) return;
       try {
         const dataUrl = await resizeImageFile(file, 200);
-        store.data.settings.avatarUrl = dataUrl;
+        await setAvatar(dataUrl);
         render();
         await persist();
       } catch (e) {
@@ -504,6 +518,29 @@ export function attachHandlers() {
   };
   if (restMinus) restMinus.addEventListener("click", () => updateRest(-15));
   if (restPlus) restPlus.addEventListener("click", () => updateRest(15));
+  const goalMinus = $("weeklyGoalMinus");
+  const goalPlus = $("weeklyGoalPlus");
+  const goalReset = $("weeklyGoalReset");
+  const showGoal = () => {
+    const v = $("weeklyGoalVal");
+    if (v) v.textContent = currentWeeklyGoal();
+    if (goalReset) goalReset.classList.toggle("hidden", store.data.settings.weeklyGoal == null);
+  };
+  const updateGoal = async delta => {
+    haptic(6);
+    const next = Math.max(MIN_WEEKLY_GOAL, Math.min(MAX_WEEKLY_GOAL, currentWeeklyGoal() + delta));
+    store.data.settings.weeklyGoal = next;
+    showGoal();
+    await persist();
+  };
+  if (goalMinus) goalMinus.addEventListener("click", () => updateGoal(-1));
+  if (goalPlus) goalPlus.addEventListener("click", () => updateGoal(1));
+  if (goalReset) goalReset.addEventListener("click", async () => {
+    haptic(6);
+    store.data.settings.weeklyGoal = null;
+    showGoal();
+    await persist();
+  });
   const weekStartToggle = $("weekStartToggle");
   if (weekStartToggle) weekStartToggle.addEventListener("change", async e => {
     store.data.settings.weekStartsMonday = e.target.checked;
@@ -551,6 +588,16 @@ export function attachHandlers() {
       render();
       await persist();
     });
+  });
+  const beepToggle = $("beepToggle");
+  if (beepToggle) beepToggle.addEventListener("change", async e => {
+    store.data.settings.beepEnabled = e.target.checked;
+    if (e.target.checked) {
+      /* é um toque do usuário: destrava o áudio e toca uma prévia */
+      unlockAudio();
+      playBeep();
+    }
+    await persist();
   });
   const keepAwakeToggle = $("keepAwakeToggle");
   if (keepAwakeToggle) keepAwakeToggle.addEventListener("change", async e => {

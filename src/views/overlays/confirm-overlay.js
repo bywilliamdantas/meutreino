@@ -18,7 +18,7 @@ export function renderConfirmOverlay(root) {
   <div class="sheet" role="dialog" aria-modal="true">
     <div class="sheet-handle"></div>
     <div class="sheet-header">
-      <div class="sheet-date" style="font-size:16px;">${escapeHtml(msg)}</div>
+      <div class="sheet-date confirm-msg">${escapeHtml(msg)}</div>
       <button class="icon-btn" id="sheetClose" aria-label="fechar">${ICONS.close}</button>
     </div>
     <div class="sheet-actions">

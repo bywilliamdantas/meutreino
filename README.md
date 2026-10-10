@@ -23,6 +23,7 @@ meus-treinos/
 │   ├── theme.js            → tema claro/escuro
 │   ├── counters.js         → contadores internos de id
 │   ├── persistence.js      → salvar/carregar do localStorage
+│   ├── storage/            → IndexedDB (foto e backups), migração única, medidor de espaço
 │   ├── data-migrations.js  → migração de dados de versões antigas
 │   ├── reminders.js        → lembrete diário
 │   ├── body-tracking.js    → peso corporal e medidas
@@ -33,7 +34,7 @@ meus-treinos/
 │   ├── auth/                → login, sessão, hash de senha
 │   ├── utils/                → formatação, datas, números, DOM, imagens
 │   ├── ui/                   → toast, avatar e outros pedacinhos de interface
-│   ├── workouts/              → treinos, sessões, sessão ativa (cronômetro)
+│   ├── workouts/              → treinos, sessões, sessão ativa (cronômetro), meta semanal (weekly-goal.js)
 │   ├── exercises/              → biblioteca de exercícios e histórico
 │   ├── stats/                   → recordes pessoais e estatísticas
 │   ├── backup/                   → backup automático, exportar/importar
@@ -59,6 +60,8 @@ essa reorganização" mais abaixo se quiser os detalhes).
 
 Os dados (treinos, exercícios e histórico) ficam salvos no `localStorage` do
 navegador do seu iPhone, **separados por usuário logado** — não há servidor.
+A foto de perfil e os backups automáticos ficam no **IndexedDB** (v8.2), que tem
+muito mais espaço que os ~5 MB do localStorage.
 Use **Ajustes → Dados e backup → Exportar** de vez em quando para não perder
 o histórico caso troque de aparelho.
 
@@ -134,6 +137,17 @@ navegador simulado, e conferem que nada explodiu):
   clica) e confere que a tela de início (saudação, card do treino, barra de
   abas) aparece corretamente depois.
 
+- `weekly-goal.test.mjs` (v8.4): testes unitários da meta semanal e da sequência de
+  semanas (virada de semana e de ano, semana sem treino, descanso, troca do início da
+  semana). São funções puras: rodam sem build nem navegador com
+  `node --test tests/weekly-goal.test.mjs`.
+
+- `progression.test.mjs`: `e1rm`, `suggestNext` (últimas 3 sessões, RPE, deload) e
+  `muscleGroupOf`/grupo escolhido em exercícios próprios.
+- `streak.test.mjs`: `computeWeeklyStreak` (store, meta, início da semana, descanso).
+- `migrations.test.mjs`: todas as migrações de `src/data-migrations.js`.
+  Esses três rodam com `node --test` (sem build nem navegador) e fazem parte do `npm test`.
+
 Rode `npm test` sempre que mexer em algo estrutural (não é obrigatório para
 mudanças pequenas de texto/estilo, mas ajuda a pegar erro de referência
 quebrada cedo). Esses testes não substituem testar de verdade no iPhone —
@@ -148,6 +162,84 @@ tinha para dentro de `public/icons/` antes de publicar — sem eles o app
 ainda funciona, só aparece sem ícone próprio na tela de início do iPhone.
 
 ## Novidades desta versão
+
+### v8.5 — Timer de descanso
+- **Beep ao fim do descanso** (Web Audio, 880 Hz, ~0,2 s). O áudio é liberado no primeiro
+  toque do usuário (exigência do iOS; `src/audio/beep.js`) e a vibração continua. Liga/desliga
+  em Ajustes → Treino → *Som ao fim do descanso* (`settings.beepEnabled`, padrão ligado; ao ligar
+  toca uma prévia). Não apita se o descanso acabou há mais de 3 s (ex.: ao voltar ao app).
+- **Última série não inicia descanso**: marcar a última série da lista do exercício não dispara
+  o timer (`src/workouts/rest-rules.js`). **Superset continua como antes** (nunca inicia timer).
+- **Repetir anterior**: chip sob cada série (a partir da 2ª, enquanto não marcada) que copia
+  peso e reps da série acima. Cardio não tem o botão.
+- **Timer acima da tab bar**: o timer (bottom 10px) cobria a tab bar (bottom 8px) por inteiro.
+  Agora fica acima dela (altura medida em JS, variável `--rest-bottom`) e, com a folha do dia
+  aberta, rente ao rodapé com folga extra no fim da folha. Em telas ≤ 380px o timer é mais
+  compacto. A página ganha espaço no fim enquanto o timer está visível (classe `rest-on`).
+- Testes novos: `tests/rest-rules.test.mjs` e `tests/beep.test.mjs` (`node --test`).
+- No iOS o Web Audio respeita o botão de silencioso do aparelho.
+
+### Progressão e testes
+- **Sugestão de carga** (`suggestNext`, `src/stats/prs.js`) olha as últimas 3 sessões do
+  exercício e o RPE anotado na sessão mais recente (`sess.meta[exId].rpe`):
+  - bateu a meta de reps: +1 passo (2,5 kg / 5 lb); RPE 10 repete a carga; RPE ≤ 6 sobe 2 passos;
+  - não bateu: mesma carga, +1 rep;
+  - **estagnação** (as 2 sessões mais recentes não superaram a mais antiga das 3, com 0,5% de
+    tolerância no 1RM estimado) e a última não bateu a meta: **deload de ~10%** (arredondado ao passo).
+- **Grupo muscular em exercício próprio**: ao digitar um nome fora da biblioteca, o picker mostra
+  "Grupo muscular". Fica em `ex.group` (e no snapshot da sessão); `muscleGroupOf(name, ex)` usa
+  esse grupo antes da biblioteca. Sem escolha, continua em "Outros". Nome já usado em outro
+  exercício próprio reaproveita o grupo. `SCHEMA_VERSION` não mudou (campo opcional).
+- Testes unitários novos (ver "Testes").
+
+### v8.4 — Sequência semanal
+- **Meta semanal** em Ajustes → Treino (1 a 14 treinos por semana). Sem escolha, vale o
+  padrão: quantidade de treinos que não são descanso no ciclo. *Usar padrão* volta a
+  acompanhar o ciclo. Guardada em `settings.weeklyGoal` (`null` = padrão).
+- **Início**: "dias seguidos" virou **semanas seguidas** (semanas em que a meta foi batida)
+  e o card da semana mostra **x de y esta semana**. O mesmo vale para o Perfil.
+- A semana atual em andamento não quebra a sequência; só conta quando bate a meta.
+  Semana passada abaixo da meta (ou sem treino) encerra a contagem.
+- Só contam sessões que não são de descanso (`isRestLetter`) e respeita
+  *Semana começa na segunda*.
+- Lógica em `src/workouts/weekly-goal.js` (funções puras); `computeStreak` foi removida.
+- `SCHEMA_VERSION` não mudou (campo novo é opcional e migrado em `migrateSettings`).
+
+### v8.3 — Login diário
+- **A sessão não expira mais na virada do dia.** Só expira ao tocar em **Sair** ou
+  depois de N dias sem abrir o app (padrão **30**; mude em Ajustes → Conta →
+  *Manter conectado por*: 7, 14, 30, 60 ou 90 dias). O prazo é uma preferência do
+  aparelho, por usuário (`gym-idle-days:<usuario>`).
+- **Nunca derruba para o login com treino ativo** (`activeSession.state` diferente de
+  `idle`), nem ao voltar ao app nem no boot (nesse caso olha o JSON salvo). Sair
+  manualmente com treino ativo pede confirmação e o treino continua salvo.
+- **PIN de 4 dígitos opcional** (Ajustes → Conta → *PIN de acesso*): guardado como
+  PBKDF2-HMAC-SHA256 (600 mil iterações, salt aleatório de 16 bytes) via
+  `crypto.subtle`, em `gym-pin:<usuario>` — fora dos dados do app, então não vai para
+  exportação nem para backups. Criar/alterar exige a senha atual. A senha continua
+  valendo e é a recuperação; 5 erros seguidos bloqueiam o PIN até entrar com a senha.
+- Sessões antigas (v8.1, com `loginDay`) são aceitas e convertidas.
+- `users.json`, a separação de dados por usuário e `SCHEMA_VERSION` não mudaram.
+- Testes novos: `tests/auth.test.mjs` (8 cenários).
+
+### v8.2 — Armazenamento e backups
+- **Foto de perfil e backups automáticos migraram para o IndexedDB.** Os dados
+  principais continuam no `localStorage` (leitura síncrona no boot e gravação no
+  `beforeunload`, que o IndexedDB não garante).
+- **Migração automática e única** (`src/storage/legacy-migration.js`): copia para o
+  IndexedDB, lê de volta e compara; só então apaga a cópia antiga. Se algo falhar,
+  a cópia antiga fica e a tentativa se repete na próxima abertura.
+- **Ajustes → Dados e backup → Espaço em uso**: barra do localStorage (~5 MB), barra
+  da cota do aparelho (`navigator.storage.estimate`) e aviso a partir de 70%
+  (reforçado a partir de 90%).
+- **Falhas de backup deixam de ser silenciosas**: o app avisa e mostra o motivo em
+  Dados e backup. Nada é descartado para "caber".
+- `SCHEMA_VERSION` 3 → 4. Histórico de sessões e snapshot **não mudaram**. O arquivo
+  exportado continua com a foto em `settings.avatarUrl` (compatível), mas só abre
+  em apps v8.2+.
+- Restaurar um backup automático agora mantém a foto atual (as cópias novas não
+  guardam a foto).
+- Testes novos: `tests/storage.test.mjs` (usa `fake-indexeddb`).
 
 **Rodada 10 (v8.1) — ajustes de treino, histórico e telas**
 - **Treinos anteriores preservados**: sessões já registradas (finalizadas ou de

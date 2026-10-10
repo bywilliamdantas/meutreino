@@ -1,6 +1,6 @@
 {
   "name": "meus-treinos",
-  "version": "8.1.0",
+  "version": "8.5.0",
   "description": "App para organizar treinos A/B/C, ciclo automático e histórico. PWA instalável no iPhone.",
   "private": true,
   "type": "module",
@@ -8,12 +8,13 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "npm run build --silent && node tests/smoke-boot.test.mjs && node tests/smoke-login.test.mjs && node tests/behavior.test.mjs login && node tests/behavior.test.mjs app"
+    "test": "npm run build --silent && node tests/smoke-boot.test.mjs && node tests/smoke-login.test.mjs && node tests/behavior.test.mjs login && node tests/behavior.test.mjs app && node tests/storage.test.mjs migrate && node tests/storage.test.mjs failure && node tests/storage.test.mjs usage && node tests/auth.test.mjs && node tests/tokens.test.mjs && node --test tests/weekly-goal.test.mjs tests/rest-rules.test.mjs tests/beep.test.mjs tests/progression.test.mjs tests/streak.test.mjs tests/migrations.test.mjs"
   },
   "devDependencies": {
     "@babel/generator": "^8.0.6",
     "@babel/parser": "^8.0.6",
     "@babel/traverse": "^8.0.6",
+    "fake-indexeddb": "^6.2.5",
     "jsdom": "^30.1.1",
     "vite": "^8.3.1"
   }

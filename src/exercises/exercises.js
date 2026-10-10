@@ -111,7 +111,30 @@ export function restForExercise(exId) {
   return store.data.settings.restDuration || 90;
 }
 
-export function muscleGroupOf(name) {
+/* Grupos que fazem sentido como "músculo" ao criar um exercício próprio
+   (Cardio é um tipo; Kettlebell e Peso corporal são modalidades). */
+const NON_MUSCLE_GROUPS = new Set(["Cardio", "Kettlebell", "Peso corporal"]);
+export const SELECTABLE_GROUPS = Object.keys(EXERCISE_LIBRARY).filter(g => !NON_MUSCLE_GROUPS.has(g));
+
+export function isSelectableGroup(g) {
+  return typeof g === "string" && SELECTABLE_GROUPS.includes(g);
+}
+
+/* Grupo já escolhido para um exercício próprio com esse nome (em qualquer treino), se houver. */
+export function customGroupFor(name) {
+  const n = String(name || "").trim().toLowerCase();
+  if (!n) return null;
+  for (const w of Object.values(store.data.workouts)) {
+    const ex = (w.exercises || []).find(e => (e.name || "").trim().toLowerCase() === n && isSelectableGroup(e.group));
+    if (ex) return ex.group;
+  }
+  return null;
+}
+
+/* Grupo muscular para as estatísticas. Prioridade: escolha explícita (ex.group) > biblioteca > "Outros".
+   `ex` é opcional (aceita também o item do snapshot da sessão). */
+export function muscleGroupOf(name, ex) {
+  if (ex && isSelectableGroup(ex.group)) return ex.group;
   if (!name) return "Outros";
   if (!store._libGroupMap) {
     store._libGroupMap = {};

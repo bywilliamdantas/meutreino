@@ -50,7 +50,7 @@ export function collectStats(days) {
     if (!isWork(s)) return;
     sessionIds.add(sess.id);
     sets++;
-    const g = muscleGroupOf(ex && ex.name);
+    const g = muscleGroupOf(ex && ex.name, ex);
     groups[g] = (groups[g] || 0) + 1;
     if (s.weight > 0 && s.reps > 0) volume += s.weight * s.reps;
   });

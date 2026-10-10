@@ -73,6 +73,9 @@ export function migrateSessionSnapshots(s) {
         id: ex.id,
         name: ex.name || "",
         type: ex.type || "strength",
+        ...(ex.group ? {
+          group: ex.group
+        } : {}),
         ...(ex.sets !== undefined ? {
           sets: ex.sets
         } : {}),
@@ -91,6 +94,14 @@ export function migrateSessionSnapshots(s) {
   });
 }
 
+/* Foto de perfil "inline" (data URL dentro de settings.avatarUrl) é o formato
+   até a v8.1 e ainda aparece em arquivos exportados. Esta função só LÊ: quem
+   limpa o campo é src/storage (depois de confirmar a gravação no IndexedDB). */
+export function inlineAvatarOf(s) {
+  const v = s && s.settings && s.settings.avatarUrl;
+  return typeof v === "string" && v ? v : null;
+}
+
 export function migrateSettings(s) {
   if (!s.settings) s.settings = {};
   const d = {
@@ -103,6 +114,7 @@ export function migrateSettings(s) {
     workoutsCollapsed: false,
     restDuration: 90,
     weekStartsMonday: false,
+    weeklyGoal: null,
     restTimerActive: null
   };
   if (!s.settings.reminder) s.settings.reminder = {
@@ -120,9 +132,17 @@ export function migrateSettings(s) {
   }
   if (s.settings.restDuration === undefined) s.settings.restDuration = 90;
   if (s.settings.weekStartsMonday === undefined) s.settings.weekStartsMonday = false;
+  /* null = usar o padrão (treinos não-descanso do ciclo); número = meta escolhida em Ajustes → Treino */
+  if (s.settings.weeklyGoal === undefined) s.settings.weeklyGoal = null;
+  else if (s.settings.weeklyGoal !== null) {
+    const g = Math.round(Number(s.settings.weeklyGoal));
+    s.settings.weeklyGoal = Number.isFinite(g) && g >= 1 ? Math.min(14, g) : null;
+  }
   if (s.settings.restTimerActive === undefined) s.settings.restTimerActive = null;
   if (s.settings.unit !== "kg" && s.settings.unit !== "lb") s.settings.unit = "kg";
   if (s.settings.keepAwake === undefined) s.settings.keepAwake = true;
+  /* som (beep) ao fim do descanso; ligado por padrão */
+  if (typeof s.settings.beepEnabled !== "boolean") s.settings.beepEnabled = true;
   if (s.settings.avatarUrl === undefined) s.settings.avatarUrl = null;
   if (s.settings.displayName === undefined) s.settings.displayName = "";
 }

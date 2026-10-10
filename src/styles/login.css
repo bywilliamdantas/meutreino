@@ -14,10 +14,6 @@
     text-align:center;
     overflow:hidden;
     touch-action:manipulation;
-    background:
-      radial-gradient(circle at 20% 0%, rgba(124,92,252,0.35), transparent 50%),
-      radial-gradient(circle at 100% 100%, rgba(255,90,54,0.30), transparent 55%),
-      linear-gradient(160deg, #170f22 0%, #0f0a13 55%, #050308 100%);
     color:#fff;
   }
   .login-wrap::before{
@@ -144,3 +140,11 @@
 
   /* a barra de abas não existe na tela de login (fica vazia, só com o fundo) */
   .tabbar:empty, body:has(.login-wrap) .tabbar{ display:none !important; }
+
+  /* PIN: alternância senha/PIN */
+  .login-form .hidden{ display:none !important; }
+  .login-mode-link{
+    align-self:flex-end; font-size:13px; font-weight:700;
+    color:var(--accent); text-decoration:none; margin:-4px 2px 2px;
+  }
+  #loginPin{ letter-spacing:0.5em; font-variant-numeric:tabular-nums; }

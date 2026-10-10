@@ -1,0 +1,141 @@
+/* ============================================================
+   tokens.css — ÚNICA fonte de cores, raios, sombras e espaçamentos.
+
+   - `:root` traz o tema claro e tudo o que não muda entre temas.
+   - O tema escuro só redeclara o que muda e aparece em dois seletores
+     com o MESMO conteúdo: um para o modo "auto" (preferência do sistema)
+     e outro para o modo forçado (`data-theme="dark"`). Ao editar um,
+     edite o outro — `npm test` (tests/tokens.test.mjs) confere.
+   - `--bg` de cada tema também é a cor da barra do navegador
+     (`<meta name="theme-color">`): se mudar aqui, mude em
+     src/theme.js (THEME_COLOR) e em index.html.
+   ============================================================ */
+
+:root{
+  /* ---------- espaçamento ---------- */
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px;
+
+  /* ---------- raios ---------- */
+  --r-sm:12px; --r-md:16px; --r-lg:20px; --r-xl:24px; --r-2xl:28px;
+  --r-card:22px;   /* faixa de estatísticas */
+  --r-ctl:14px;    /* botões e campos de toque */
+  --r-hero:28px;   /* card escuro da Home */
+  --r-float:26px;  /* tab bar e timer de descanso flutuantes */
+  --r-sheet:32px;  /* topo das folhas (sheets) */
+
+  /* ---------- tipografia ---------- */
+  --font-display:ui-rounded,"SF Pro Rounded",-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+  --font-score:"Treino Score", ui-rounded, system-ui, sans-serif;
+
+  /* ---------- superfícies e texto ---------- */
+  --bg:#f3f2ef;
+  --surface:#ffffff;
+  --surface-2:#ffffff;
+  --surface-3:#ecebe7;
+  --card-border:rgba(20,18,26,0.09);
+  --divider:rgba(20,18,26,0.08);
+
+  --text-primary:#14121a;
+  --text-secondary:#4f4859;
+  --text-muted:#6d6677;
+  --text-label:#4f4859;
+
+  --dot-off:#e9e5f0;
+  --dot-future:#dcd6e6;
+
+  /* ---------- "tinta": o elemento escuro e dominante de cada tela ---------- */
+  --ink:#17141c;
+  --ink-2:#231f2b;
+  --on-ink-fill:rgba(255,255,255,0.10);     /* botões/chips sobre a tinta */
+  --on-ink-fill-strong:rgba(255,255,255,0.12);
+  --on-ink-line:rgba(255,255,255,0.16);     /* trilho do anel do timer */
+  --on-ink-text:rgba(255,255,255,0.68);     /* texto secundário sobre a tinta */
+  --on-ink-text-soft:rgba(255,255,255,0.62);
+  --hero-badge-bg:rgba(255,255,255,0.10);   /* etiqueta do hero ("Próximo treino") */
+  --tabbar-bg:rgba(255,255,255,0.9);
+
+  /* ---------- estados ---------- */
+  --danger:#f0334f;
+  --danger-bg:rgba(240,51,79,0.10);
+  --danger-border:rgba(240,51,79,0.28);
+
+  --ok:#22c55e;
+  --ok-bg:rgba(34,197,94,0.12);
+  --ok-border:rgba(34,197,94,0.32);
+
+  --info:#2f8fff;
+  --info-bg:rgba(47,143,255,0.10);
+  --info-border:rgba(47,143,255,0.28);
+
+  /* ---------- marca ---------- */
+  --accent:#ff5a36;
+  --accent-2:#ff8862;
+  --accent-soft:rgba(255,90,54,0.10);
+  --accent-border:rgba(255,90,54,0.24);
+  --accent-on:#ffffff;
+
+  --violet:#7c5cfc;
+  --violet-soft:rgba(124,92,252,0.12);
+  --violet-border:rgba(124,92,252,0.28);
+  --gold:#ffb020;
+
+  /* ---------- sombras ---------- */
+  --shadow-card:0 1px 2px rgba(20,18,26,0.04);
+  --shadow-sheet:0 -20px 60px rgba(0,0,0,0.18);
+  --shadow-accent:0 10px 22px rgba(255,90,54,0.28);
+  --shadow-hero:0 18px 40px rgba(20,18,26,0.22);
+  --shadow-float:0 12px 32px rgba(20,18,26,0.14);   /* tab bar */
+  --shadow-float-ink:0 16px 40px rgba(20,18,26,0.35); /* timer de descanso */
+  --shadow-cta:0 8px 20px rgba(255,90,54,0.35);     /* botão principal do hero */
+
+  --ease:cubic-bezier(.32,.72,0,1);
+  color-scheme: light;
+}
+
+/* ---------- tema escuro: modo "auto" (preferência do sistema) ---------- */
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e0b12;
+    --surface:#151119;
+    --surface-2:#1c1722;
+    --surface-3:#211b28;
+    --card-border:rgba(255,255,255,0.08);
+    --divider:rgba(255,255,255,0.07);
+    --text-primary:#f6f4f9;
+    --text-secondary:#b3abc0;
+    --text-muted:#8a8394;
+    --text-label:#a49dae;
+    --dot-off:#2c2733;
+    --dot-future:#3c3644;
+    --ink:#1d1824;
+    --ink-2:#2a2333;
+    --hero-badge-bg:rgba(255,90,54,0.18);
+    --tabbar-bg:rgba(29,24,36,0.9);
+    --shadow-card:none;
+    --shadow-sheet:0 -20px 60px rgba(0,0,0,0.6);
+    color-scheme: dark;
+  }
+}
+
+/* ---------- tema escuro: modo forçado (mesmo conteúdo do bloco acima) ---------- */
+:root[data-theme="dark"]{
+  --bg:#0e0b12;
+  --surface:#151119;
+  --surface-2:#1c1722;
+  --surface-3:#211b28;
+  --card-border:rgba(255,255,255,0.08);
+  --divider:rgba(255,255,255,0.07);
+  --text-primary:#f6f4f9;
+  --text-secondary:#b3abc0;
+  --text-muted:#8a8394;
+  --text-label:#a49dae;
+  --dot-off:#2c2733;
+  --dot-future:#3c3644;
+  --ink:#1d1824;
+  --ink-2:#2a2333;
+  --hero-badge-bg:rgba(255,90,54,0.18);
+  --tabbar-bg:rgba(29,24,36,0.9);
+  --shadow-card:none;
+  --shadow-sheet:0 -20px 60px rgba(0,0,0,0.6);
+  color-scheme: dark;
+}
