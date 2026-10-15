@@ -270,6 +270,15 @@ A ilustração do logo (`src/icons-svg.js`) e os PNGs não são do Lucide.
 
 ## Novidades desta versão
 
+### v10.1 — Imagens dos exercícios
+- Cache do app atualizado para `meus-treinos-v10.1.0`.
+- No painel do treino, a foto do exercício substitui o ícone (caixa 56×40, `object-fit: contain`, sem cortar nem distorcer). Tocar na foto abre um modal por cima do treino com as duas posições (início e fim); fecha pelo ✕, tocando fora, ou com Esc — sem fechar nem alterar o treino em andamento.
+- Na edição do treino a miniatura também mostra a foto, mas tocar nela continua abrindo o seletor de nome (sem zoom, para não mudar esse fluxo).
+- Sem imagem (exercício próprio, cardio, sem mapeamento ou foto que não carregou) = ícone padrão da categoria, como antes.
+- Fonte: yuhonas/free-exercise-db (domínio público). `src/exercises/exercise-images.js` liga o nome do exercício ao id da foto (`EXERCISE_IMAGE_MAP`). As fotos são procuradas em `./exercise-images/` (cópia local, offline) e, se não houver, na CDN do GitHub.
+- `npm run imagens:verificar` confere os ids contra o banco real e lista exercícios sem imagem (`-- --lista` mostra os nomes); `npm run imagens:baixar` copia as fotos para `public/exercise-images/`. Ambos precisam de internet.
+- Para ligar mais um exercício: adicione `"Nome na biblioteca": "Id_no_free-exercise-db"` em `EXERCISE_IMAGE_MAP`.
+
 ### v10.0 — Novo visual e gestos na lista de Treinos
 - Cache do app atualizado para `meus-treinos-v10.0.0` (os caches antigos são apagados na ativação).
 - Lista de Treinos: arrastar para a direita revela **Editar**; para a esquerda revela **Delete** (com "Desfazer"). Setas do teclado também abrem as ações.
