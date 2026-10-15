@@ -129,7 +129,7 @@ const FOCUSABLE = 'a[href], button, input:not([type="hidden"]), select, textarea
 
 /* Fora do "fundo" inerte: o próprio painel, o timer de descanso (continua operável sobre a folha do
    dia), o aviso (toast, com o "Desfazer") e a região aria-live que anuncia o fim do descanso. */
-const KEEP_ACTIVE = new Set(["sheetRoot", "restTimerRoot", "toast", "restLive"]);
+const KEEP_ACTIVE = new Set(["sheetRoot", "restTimerRoot", "toast", "restLive", "exLightbox"]);
 const NEVER_MUTED = /^(SCRIPT|STYLE|LINK|TEMPLATE)$/;
 
 /* opener/openerSel: quem abriu o painel (e como reencontrá-lo se o render() o recriou);
@@ -295,7 +295,7 @@ function onFocusIn(ev) {
     const el = document.getElementById(id);
     return !!el && el.contains(t);
   };
-  if (panel.contains(t) || inside("restTimerRoot") || inside("toast")) return;
+  if (panel.contains(t) || inside("restTimerRoot") || inside("toast") || inside("exLightbox")) return;
   focusInitial(panel);
 }
 

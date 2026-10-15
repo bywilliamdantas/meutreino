@@ -11,6 +11,7 @@ import { loadAvatarIntoStore } from "./storage/avatar.js";
 import { migrateLegacyStorage } from "./storage/legacy-migration.js";
 import { migrateSessionsToIdb, sessionsMode } from "./storage/session-store.js";
 import { applyTheme, getThemePref } from "./theme.js";
+import "./ui/exercise-lightbox.js";
 import { showToast } from "./ui/toast.js";
 import { backgroundUpdateCheck, checkForUpdate, reloadOnce } from "./update/sw-update.js";
 import { renderLogin } from "./views/login-view.js";

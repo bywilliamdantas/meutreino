@@ -15,7 +15,7 @@ import { fmtClock, fmtDuration, fmtW, fromDisp, toDisp, todayKey, unit, weightSt
 import { newSessionId } from "../../utils/ids.js";
 import { isCardio, isWork, parseNum, roundToStep } from "../../utils/numbers.js";
 import { activeElapsedMs, syncWakeLock } from "../../workouts/active-session.js";
-import { computeSessionIntensity, sessionDurationMs, sessionHasData, sessionsFor, stampSnapshot } from "../../workouts/sessions.js";
+import { describeIntensity, intensityBaseline, sessionDurationMs, sessionHasData, sessionIntensityDetail, sessionsFor, stampSnapshot } from "../../workouts/sessions.js";
 import { DEFAULT_SETS, previousSetValues, shouldStartRest } from "../../workouts/rest-rules.js";
 import { workoutLabel } from "../../workouts/workouts.js";
 import { render } from "../render.js";
@@ -242,13 +242,23 @@ export function renderDayOverlay(root) {
             <p class="empty-sub">Adicione exercícios na aba "Treinos" antes de registrar.</p>
           </div>`;
   let durationLabel = "—";
+  let finishedMs = null; /* duração só de sessão encerrada (ao vivo distorceria o ritmo) */
   if (hasActiveHere) durationLabel = fmtClock(elapsed);
   else if (store.overlay.sessionId) {
     const sess = sessionsFor(dateKey).find((s) => s.id === store.overlay.sessionId);
     const ms = sess ? sessionDurationMs(sess) : null;
-    if (ms) durationLabel = fmtDuration(ms);
+    if (ms) {
+      durationLabel = fmtDuration(ms);
+      finishedMs = ms;
+    }
   }
-  const intensity = computeSessionIntensity(wv, log);
+  const intensityDetail = sessionIntensityDetail(wv, log, {
+    meta: store.overlay.meta,
+    history: intensityBaseline(letter, dateKey),
+    durationMs: finishedMs
+  });
+  const intensity = intensityDetail ? intensityDetail.label : null;
+  const intensityTip = escapeAttr(describeIntensity(intensityDetail));
   const color = colorFor(letter, store.data.order);
   const sessionHeadHtml = `<div class="sheet-session-head">
     <div class="ssh-top">
@@ -264,7 +274,7 @@ export function renderDayOverlay(root) {
         ? `<div class="ssh-stats">
       <div class="ssh-stat"><span class="ssh-stat-num" id="sheetClockTime">${durationLabel}</span><span class="ssh-stat-label">duração</span></div>
       <div class="ssh-stat"><span class="ssh-stat-num">${dayEx.length}</span><span class="ssh-stat-label">exercício${dayEx.length === 1 ? "" : "s"}</span></div>
-      <div class="ssh-stat"><span class="ssh-stat-num">${intensity || "—"}</span><span class="ssh-stat-label">intensidade</span></div>
+      <div class="ssh-stat" title="${intensityTip}"><span class="ssh-stat-num">${intensity || "—"}</span><span class="ssh-stat-label">intensidade</span></div>
     </div>`
         : ""
     }
@@ -614,7 +624,7 @@ export function exExtrasHtml(ex) {
 export function exNameHtml(ex, fallback, linked, completed) {
   const url = safeUrl(ex.link);
   return `<div class="sheet-ex-name${linked ? " linked" : ""}">
-    ${exThumbHtml(ex)}
+    ${exThumbHtml(ex, undefined, { zoom: true })}
     <span class="sheet-ex-title">${escapeHtml(ex.name || fallback)}</span>
     ${linked ? `<span class="ss-badge">superset</span>` : ""}
     ${url ? `<a class="ex-link" href="${escapeAttr(url)}" target="_blank" rel="noopener noreferrer" aria-label="Ver vídeo ou técnica">${ICONS.link}</a>` : ""}
