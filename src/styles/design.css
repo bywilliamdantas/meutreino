@@ -111,13 +111,10 @@ body {
   letter-spacing: 0;
 }
 
-/* números grandes na fonte própria */
+/* números grandes na fonte própria (a aba Progresso usa a fonte padrão do app) */
 .stat-num,
 .rest-time,
-.hero-clock,
-.sg-num,
-.body-big,
-.record-val {
+.hero-clock {
   font-family: var(--font-score);
   font-weight: 400;
   letter-spacing: 0.02em;
@@ -240,6 +237,7 @@ body {
 }
 .hero-v2-btn.primary {
   background: linear-gradient(180deg, var(--accent-hi), var(--accent));
+  color: var(--white);
   box-shadow: var(--shadow-cta);
 }
 .hero-v2-btn.ghost {

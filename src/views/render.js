@@ -157,13 +157,6 @@ export function render() {
          <button type="button" class="hero-v2-chip" id="addSecondBtn">${ICONS.plus} Novo</button>
        </div>`
       : "";
-  const heroExNames = !hasActive && todayCount === 0 && Array.isArray(heroW.exercises) ? heroW.exercises.map((e) => e && e.name).filter(Boolean) : [];
-  const heroChipsHtml = heroExNames.length
-    ? `<div class="hero-v2-chips">${heroExNames
-        .slice(0, 3)
-        .map((n) => `<span class="hero-ex-chip">${escapeHtml(n)}</span>`)
-        .join("")}${heroExNames.length > 3 ? `<span class="hero-ex-chip">+${heroExNames.length - 3}</span>` : ""}</div>`
-    : "";
   const heroEstMs = !hasActive && todayCount === 0 ? estimateWorkoutMs(heroW) : 0;
   const heroEstHtml = heroEstMs ? `<span class="hero-v2-est">${ICONS.timer} ~${Math.round(heroEstMs / 60000)} min</span>` : "";
   const heroHtml = `<div class="card hero-card-v2" id="heroCard">
@@ -179,7 +172,6 @@ export function render() {
     <div class="hero-v2-body">
       <div class="hero-v2-name">${escapeHtml(heroW.name || workoutLabel(heroKey))}</div>
       <div class="hero-v2-sub">${heroSub}</div>
-      ${heroChipsHtml}
     </div>
     ${heroActionsHtml}
     ${heroSecondaryRowHtml}
@@ -485,7 +477,9 @@ export function render() {
           .map((s) => {
             const isRest = isRestLetter(s.letter);
             const bg = s.letter && store.data.workouts[s.letter] && !isRest ? colorFor(s.letter, store.data.order) : REST_COLOR;
-            return `<span class="ms-chip" style="${toneVars(bg)}">${isRest ? ICONS.moonSmall : s.letter || "?"}</span>`;
+            const wk = s.letter && store.data.workouts[s.letter];
+            const title = (wk && wk.name) || (s.letter ? workoutLabel(s.letter) : "");
+            return `<span class="ms-item"><span class="ms-chip" style="${toneVars(bg)}">${isRest ? ICONS.moonSmall : s.letter || "?"}</span>${title ? `<span class="ms-title">${escapeHtml(title)}</span>` : ""}</span>`;
           })
           .join("")}</span>
         ${dur ? `<span class="ms-duration">${fmtDurationShort(dur)}</span>` : ""}

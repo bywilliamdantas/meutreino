@@ -203,6 +203,20 @@
   color: var(--white);
   background: var(--tone);
 }
+.ms-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+}
+.ms-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 .ms-arrow {
   color: var(--text-muted);
   flex-shrink: 0;
@@ -233,7 +247,8 @@
 }
 .month-sessions-card.compact .ms-letters {
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 4px 12px;
+  min-width: 0;
 }
 .month-sessions-toggle {
   width: 100%;
