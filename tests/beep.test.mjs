@@ -4,7 +4,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 const handlers = {};
-globalThis.document = { addEventListener: (ev, fn) => { (handlers[ev] ||= []).push(fn); } };
+globalThis.document = {
+  addEventListener: (ev, fn) => {
+    (handlers[ev] ||= []).push(fn);
+  }
+};
 globalThis.window = {};
 
 const { initAudioUnlock, playBeep, unlockAudio, _resetAudioForTests } = await import("../src/audio/beep.js");
@@ -12,15 +16,36 @@ const { initAudioUnlock, playBeep, unlockAudio, _resetAudioForTests } = await im
 function installFakeAudio({ startState = "suspended", resumeTo = "running" } = {}) {
   const log = { created: 0, resumes: 0, oscillators: 0, silentBuffers: 0, started: [], stopped: [] };
   class FakeCtx {
-    constructor() { log.created++; log.ctx = this; this.state = startState; this.currentTime = 0; this.destination = {}; }
-    resume() { log.resumes++; this.state = resumeTo; return Promise.resolve(); }
-    createBuffer() { return {}; }
-    createBufferSource() { return { connect() {}, start() { log.silentBuffers++; } }; }
+    constructor() {
+      log.created++;
+      log.ctx = this;
+      this.state = startState;
+      this.currentTime = 0;
+      this.destination = {};
+    }
+    resume() {
+      log.resumes++;
+      this.state = resumeTo;
+      return Promise.resolve();
+    }
+    createBuffer() {
+      return {};
+    }
+    createBufferSource() {
+      return {
+        connect() {},
+        start() {
+          log.silentBuffers++;
+        }
+      };
+    }
     createOscillator() {
       log.oscillators++;
       return { type: "", frequency: { setValueAtTime() {} }, connect() {}, start: (t) => log.started.push(t), stop: (t) => log.stopped.push(t) };
     }
-    createGain() { return { gain: { setValueAtTime() {}, exponentialRampToValueAtTime() {} }, connect() {} }; }
+    createGain() {
+      return { gain: { setValueAtTime() {}, exponentialRampToValueAtTime() {} }, connect() {} };
+    }
   }
   window.AudioContext = FakeCtx;
   return log;

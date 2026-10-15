@@ -36,10 +36,26 @@ const AVATAR = "data:image/jpeg;base64," + "A".repeat(20000);
 
 const mkData = (n) => ({
   order: ["A", "B", "C"],
-  workouts: { A: { name: "Treino A", exercises: [{ id: "e1", name: "Supino", type: "strength" }] }, B: { name: "B", exercises: [] }, C: { name: "C", exercises: [] } },
-  sessions: { "2026-09-01": [{ id: "s" + n, letter: "A", log: { e1: [{ weight: 40 + n, reps: 10, done: true }] }, startedAt: 1, endedAt: 2, snapshot: [{ id: "e1", name: "Supino", type: "strength" }] }] },
-  body: [], schemaVersion: 3,
-  settings: { avatarUrl: AVATAR, unit: "kg" },
+  workouts: {
+    A: { name: "Treino A", exercises: [{ id: "e1", name: "Supino", type: "strength" }] },
+    B: { name: "B", exercises: [] },
+    C: { name: "C", exercises: [] }
+  },
+  sessions: {
+    "2026-09-01": [
+      {
+        id: "s" + n,
+        letter: "A",
+        log: { e1: [{ weight: 40 + n, reps: 10, done: true }] },
+        startedAt: 1,
+        endedAt: 2,
+        snapshot: [{ id: "e1", name: "Supino", type: "strength" }]
+      }
+    ]
+  },
+  body: [],
+  schemaVersion: 3,
+  settings: { avatarUrl: AVATAR, unit: "kg" }
 });
 const legacyBackups = [4, 3, 2, 1, 0].map((n) => ({ date: `2026-09-0${n + 1}`, at: `2026-09-0${n + 1}T10:00:00.000Z`, sessions: 1, data: mkData(n) }));
 const legacyRaw = JSON.stringify(legacyBackups);
@@ -61,42 +77,75 @@ if (MODE === "usage") {
   navigator.storage = { estimate: async () => ({ usage: 50, quota: 100 }), persisted: async () => true, persist: async () => true };
 }
 
-global.fetch = async (url) => String(url).includes("users.json")
-  ? { ok: true, json: async () => ({ users: [{ username: "u", name: "U", salt: "x", hash: "y" }] }) }
-  : { ok: false, status: 404, json: async () => ({}) };
+global.fetch = async (url) =>
+  String(url).includes("users.json")
+    ? { ok: true, json: async () => ({ users: [{ username: "u", name: "U", salt: "x", hash: "y" }] }) }
+    : { ok: false, status: 404, json: async () => ({}) };
 
 const errors = [];
-process.on("unhandledRejection", (e) => errors.push("(promise) " + (e && e.stack || e)));
+process.on("unhandledRejection", (e) => errors.push("(promise) " + ((e && e.stack) || e)));
 window.addEventListener("error", (e) => errors.push((e.error && e.error.stack) || e.message));
 await import("../dist/app.js");
 const wait = (ms = 250) => new Promise((r) => setTimeout(r, ms));
 await wait(900);
 
 let fails = 0;
-const check = (name, cond, extra = "") => { console.log((cond ? "OK   " : "FALHA") + " - " + name + (cond ? "" : " " + extra)); if (!cond) fails++; };
+const check = (name, cond, extra = "") => {
+  console.log((cond ? "OK   " : "FALHA") + " - " + name + (cond ? "" : " " + extra));
+  if (!cond) fails++;
+};
 const $ = (s) => document.querySelector(s);
-const idb = (store, key) => new Promise((res, rej) => {
-  const o = indexedDB.open("meus-treinos");
-  o.onsuccess = () => { const r = o.result.transaction(store).objectStore(store)[key === "*" ? "getAll" : "get"](...(key === "*" ? [] : [key])); r.onsuccess = () => { o.result.close(); res(r.result); }; r.onerror = () => rej(r.error); };
-  o.onerror = () => rej(o.error);
-});
+const idb = (store, key) =>
+  new Promise((res, rej) => {
+    const o = indexedDB.open("meus-treinos");
+    o.onsuccess = () => {
+      const os = o.result.transaction(store).objectStore(store);
+      const r = key === "*" ? os.getAll() : os.get(key);
+      r.onsuccess = () => {
+        o.result.close();
+        res(r.result);
+      };
+      r.onerror = () => rej(r.error);
+    };
+    o.onerror = () => rej(o.error);
+  });
 const mainStored = () => JSON.parse(localStorage.getItem("gym-data:u"));
 const openDados = async () => {
-  $('[data-role="gotab"][data-tab="ajustes"]').click(); await wait();
-  $("#openDadosBackupBtn").click(); await wait(500);
+  $('[data-role="gotab"][data-tab="ajustes"]').click();
+  await wait();
+  $("#openDadosBackupBtn").click();
+  await wait(500);
 };
 
 if (MODE === "migrate") {
   const bk = await idb("autobackups", "*");
   check("5 backups copiados para o IndexedDB", bk.length === 5, String(bk.length));
   // a abertura de hoje cria 1 backup novo e a poda (máx. 5) descarta o mais antigo, como antes
-  check("4 backups antigos mais recentes idênticos ao original", legacyBackups.slice(0, 4).every((b) => bk.some((r) => r.at === b.at && JSON.stringify(r.data) === JSON.stringify(b.data))));
-  check("backup de hoje criado depois da migração", bk.some((r) => r.date === today));
-  check("backup novo não carrega a foto", bk.filter((r) => r.date === today).every((r) => r.data.settings.avatarUrl === null));
+  check(
+    "4 backups antigos mais recentes idênticos ao original",
+    legacyBackups.slice(0, 4).every((b) => bk.some((r) => r.at === b.at && JSON.stringify(r.data) === JSON.stringify(b.data)))
+  );
+  check(
+    "backup de hoje criado depois da migração",
+    bk.some((r) => r.date === today)
+  );
+  check(
+    "backup novo não carrega a foto",
+    bk.filter((r) => r.date === today).every((r) => r.data.settings.avatarUrl === null)
+  );
   check("cópia antiga dos backups removida do localStorage (só após confirmar)", localStorage.getItem("gym-autobackups:u") === null);
   const av = await idb("avatars", "u");
   check("avatar no IndexedDB, idêntico", av && av.dataUrl === AVATAR);
   check("avatar removido do JSON principal", mainStored().settings.avatarUrl === null);
+  // etapa 15: o histórico passa para o IndexedDB e a cópia antiga continua no localStorage
+  const rowsS = await idb("sessions", "*");
+  check(
+    "sessões copiadas para o IndexedDB (um registro por dia, idêntico)",
+    rowsS.length === 1 && rowsS[0].date === "2026-09-01" && JSON.stringify(rowsS[0].sessions) === JSON.stringify(mkData(9).sessions["2026-09-01"]),
+    JSON.stringify(rowsS)
+  );
+  const coreS = JSON.parse(localStorage.getItem("gym-data-v2:u") || "null");
+  check("núcleo gravado no localStorage sem as sessões", !!coreS && !("sessions" in coreS) && coreS._sessionsIn === "idb", JSON.stringify(coreS));
   check("histórico de sessões e snapshot intactos", JSON.stringify(mainStored().sessions) === JSON.stringify(mkData(9).sessions));
   check("schemaVersion 4", mainStored().schemaVersion === 4);
   const meta = await idb("meta", "migration:u");
@@ -106,16 +155,34 @@ if (MODE === "migrate") {
   await openDados();
   check("cartão de espaço em uso aparece", !!$("#storageUsageCard .usage-bar"));
   check("contador de backups = 5", /5 cópia/.test($("#autoBackupCountText").textContent), $("#autoBackupCountText").textContent);
-  $("#openBackupsBtn").click(); await wait(500);
-  check("tela de backups lista as 5 cópias", document.querySelectorAll('[data-role="restorebackup"]').length === 5, String(document.querySelectorAll('[data-role="restorebackup"]').length));
+  $("#openBackupsBtn").click();
+  await wait(500);
+  check(
+    "tela de backups lista as 5 cópias",
+    document.querySelectorAll('[data-role="restorebackup"]').length === 5,
+    String(document.querySelectorAll('[data-role="restorebackup"]').length)
+  );
 }
 
 if (MODE === "failure") {
   check("falha no IndexedDB: cópia antiga dos backups preservada", localStorage.getItem("gym-autobackups:u") === legacyRaw);
-  check("falha no IndexedDB: nenhum backup perdido na lista", (await (async () => { await openDados(); $("#openBackupsBtn").click(); await wait(500); return document.querySelectorAll('[data-role="restorebackup"]').length; })()) === 5);
+  check(
+    "falha no IndexedDB: nenhum backup perdido na lista",
+    (await (async () => {
+      await openDados();
+      $("#openBackupsBtn").click();
+      await wait(500);
+      return document.querySelectorAll('[data-role="restorebackup"]').length;
+    })()) === 5
+  );
   check("avatar migrou mesmo assim (falha foi só nos backups)", mainStored().settings.avatarUrl === null && (await idb("avatars", "u"))?.dataUrl === AVATAR);
-  $("#sheetClose")?.click(); await wait();
-  check("erro de backup fica visível em Dados e backup", /backup automático/.test($("#storageUsageCard")?.textContent || ""), $("#storageUsageCard")?.textContent);
+  $("#sheetClose")?.click();
+  await wait();
+  check(
+    "erro de backup fica visível em Dados e backup",
+    /backup automático/.test($("#storageUsageCard")?.textContent || ""),
+    $("#storageUsageCard")?.textContent
+  );
 }
 
 if (MODE === "usage") {

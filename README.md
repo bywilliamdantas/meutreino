@@ -10,10 +10,14 @@ Tem tela de login e navegação por abas, no estilo de app nativo.
 ```
 meus-treinos/
 ├── index.html            → esqueleto HTML (o app inteiro é montado via JS)
-├── package.json           → dependências e scripts (dev / build / test)
-├── vite.config.js         → configuração do build
+├── package.json           → dependências, scripts e a versão do app (única fonte)
+├── vite.config.js         → configuração do build (gera APP_VERSION e CACHE_NAME)
+├── eslint.config.js       → regras do ESLint (config flat)
+├── .prettierrc.json       → estilo do Prettier (aspas duplas, ponto e vírgula)
+├── .prettierignore        → o que o Prettier não mexe (dist, public, data, *.md...)
+├── .editorconfig          → indentação, fim de linha e codificação do editor
 ├── .github/workflows/
-│   └── deploy.yml          → build + publicação automática no GitHub Pages
+│   └── deploy.yml          → testes → build → publicação no GitHub Pages
 ├── src/
 │   ├── main.js             → ponto de entrada (importa o CSS e o boot.js)
 │   ├── store.js            → estado global do app (um único objeto)
@@ -24,6 +28,7 @@ meus-treinos/
 │   ├── counters.js         → contadores internos de id
 │   ├── persistence.js      → salvar/carregar do localStorage
 │   ├── storage/            → IndexedDB (foto e backups), migração única, medidor de espaço
+│   ├── audio/              → beep do fim do descanso (Web Audio)
 │   ├── data-migrations.js  → migração de dados de versões antigas
 │   ├── reminders.js        → lembrete diário
 │   ├── body-tracking.js    → peso corporal e medidas
@@ -45,10 +50,12 @@ meus-treinos/
 ├── public/                 → arquivos copiados como estão para o site final
 │   ├── manifest.json         → configuração do PWA
 │   ├── sw.js                  → service worker (uso offline + atualização)
-│   ├── users.json              → lista de usuários e senhas (você edita à mão)
-│   ├── gerar-hash.html           → ferramenta offline para gerar linhas do users.json
+│   ├── users.json              → lista de usuários (apelido + hash da senha; você edita à mão)
 │   └── icons/                     → ícones do app (veja "Ícones" abaixo)
-├── tests/                  → dois testes automáticos de fumaça (ver "Testes")
+├── tests/                  → 22 arquivos de teste, rodados por `npm test` (ver "Testes")
+├── tools/
+│   ├── gerar-hash.html      → ferramenta offline para gerar o hash das senhas (uso local; NÃO vai para o site publicado)
+│   └── build-font.py        → script que gera a fonte de números (src/fonts/treino-score.woff2)
 └── README.md
 ```
 
@@ -88,25 +95,60 @@ npm run build   # gera dist/index.html, dist/app.js, dist/app.css etc.
 npm test
 ```
 
+**Qualidade de código** (ESLint e Prettier):
+```
+npm run lint           # ESLint: deve terminar sem erros
+npm run format:check   # só confere o estilo, sem alterar nada
+npm run format         # Prettier reescreve os arquivos no estilo do projeto
+```
+O Prettier está configurado com o estilo que o código já tinha (aspas duplas, ponto e
+vírgula, sem vírgula final, linhas até 160 colunas), então o diff costuma ser pequeno. Mesmo
+assim, para não gerar um commit enorme misturado com outras mudanças, prefira formatar só o
+que você mexeu: `npx prettier --write src/arquivo.js`. O `.editorconfig` faz o editor seguir
+as mesmas regras (2 espaços, LF, UTF-8).
+
 Você não precisa rodar `npm run build` manualmente para publicar — isso é
 feito automaticamente pelo GitHub Actions a cada `git push` na branch
-`main` (veja "Ativar o GitHub Pages" abaixo). `npm run dev`/`npm run build`
+`main` (veja "Ativar o GitHub Pages" abaixo). **O workflow roda `npm test` antes
+do build: se qualquer teste falhar, nada é publicado** (o job de publicação só
+começa depois do job de build/testes terminar com sucesso). O CI usa Node 22. `npm run dev`/`npm run build`
 são só para quando você quiser testar ou conferir localmente antes de subir.
 
 ## Login
 
-O acesso ao app agora exige login. Isso **não é segurança de verdade** — é
-só uma barreira simples contra alguém pegar seu iPhone destravado e abrir o
-app sem querer, ou contra visitas casuais ao link público. Qualquer pessoa
-com acesso ao código-fonte (por exemplo, olhando o repositório no GitHub)
-consegue ver a lista de usuários e os hashes. Não reutilize uma senha que
-você usa em outro lugar importante.
+O acesso ao app exige login, mas ele é uma **porta de cortesia, não segurança
+real**. Serve para alguém não abrir o app sem querer no seu iPhone destravado
+ou numa visita casual ao link. **Os dados (treinos, histórico, medidas, fotos)
+ficam no aparelho**, no `localStorage`/IndexedDB do navegador, sem servidor:
+quem tiver o aparelho destravado, ou souber abrir o DevTools, lê tudo sem passar
+pelo login. E como o app é estático, o `users.json` é público: qualquer pessoa
+com o link (ou com o repositório, se for público) baixa a lista de usuários e os
+hashes e pode tentar adivinhar senhas fracas offline. O que o app faz para
+dificultar isso, sem prometer mais do que entrega:
+
+- **Hash forte:** a senha é guardada como PBKDF2-HMAC-SHA256 (600 mil iterações)
+  com um salt aleatório de 16 bytes, único por usuário — o mesmo padrão do PIN
+  (`src/auth/pin.js`). Formato do registro no `users.json`:
+  `{ "username", "name", "alg": "PBKDF2-SHA256", "iter": 600000, "salt": "<base64>", "hash": "<base64>" }`.
+- **Compatibilidade na transição:** registros no formato antigo
+  (`{ "username", "name", "salt", "hash" }`, com SHA-256 simples) continuam
+  entrando. Eles só passam a ter o hash novo quando você os gera de novo com
+  `tools/gerar-hash.html` (não há como converter sem saber a senha). Depois de
+  regenerar todos, o formato antigo pode ser tirado de `src/auth/crypto.js`.
+- **Só apelido:** o campo `name` do `users.json` é o apelido que aparece no app
+  (ex.: "William"), nunca o nome completo, porque o arquivo é público.
+- **Ferramenta fora do site:** `gerar-hash.html` fica em `tools/` e não entra no
+  build publicado. Abra o arquivo direto no seu computador.
+- **Senha longa e exclusiva:** use uma frase longa que você não usa em outro lugar.
+  Se o repositório já foi público com hashes do formato antigo, considere essas
+  senhas expostas e troque-as (o histórico do Git guarda as versões antigas do
+  `users.json`).
 
 **Para adicionar ou trocar um usuário:**
 
-1. Abra `public/gerar-hash.html` (pode ser direto do seu computador, sem
-   precisar estar publicado — é uma página offline).
-2. Preencha usuário, nome, senha (o salt já vem preenchido, pode deixar).
+1. Abra `tools/gerar-hash.html` (direto do seu computador, sem precisar estar
+   publicado — é uma página offline).
+2. Preencha usuário, apelido e senha (o salt aleatório é gerado sozinho).
 3. Toque em "Gerar e adicionar ao users.json" e depois em "Copiar" (ou
    "Baixar users.json").
 4. Abra `public/users.json` no GitHub (ícone de lápis) e cole o conteúdo
@@ -115,8 +157,9 @@ você usa em outro lugar importante.
    1–2 minutos; depois disso, na próxima vez que o app checar atualização
    (ou você tocar em Ajustes → Atualizar), o novo usuário passa a funcionar.
 
-O `users.json` de exemplo já vem com os usuários **william**, **mariana** e
-**yasmim** — troque ou remova antes de usar de verdade.
+O `users.json` de exemplo já vem com os usuários **william** e **mariana**
+(ainda no formato antigo de hash) — gere de novo com a ferramenta, troque ou
+remova antes de usar de verdade.
 
 Marcar **"Lembrar credenciais"** na tela de login guarda a sessão no
 aparelho (sobrevive a fechar o app); sem marcar, a sessão dura só enquanto a
@@ -127,31 +170,67 @@ virada do dia, ele detecta e volta para a tela de login sozinho.
 
 ## Testes
 
-A pasta `tests/` tem dois testes de fumaça (rodam o app de verdade, num
-navegador simulado, e conferem que nada explodiu):
+`npm test` faz o build (`npm run build`) e roda todos os arquivos de `tests/`.
+Se qualquer um falhar, o comando termina com erro — e o GitHub Actions não publica.
 
-- `smoke-boot.test.mjs`: builda o app, carrega a tela inicial e confere que
-  a tela de login aparece sem erro nenhum.
-- `smoke-login.test.mjs`: além disso, cria um usuário fictício com senha
-  conhecida, faz login de verdade pela interface (preenche os campos e
-  clica) e confere que a tela de início (saudação, card do treino, barra de
-  abas) aparece corretamente depois.
+**Testes de navegador simulado** (jsdom, rodam o app de verdade a partir do `dist/`):
 
-- `weekly-goal.test.mjs` (v8.4): testes unitários da meta semanal e da sequência de
-  semanas (virada de semana e de ano, semana sem treino, descanso, troca do início da
-  semana). São funções puras: rodam sem build nem navegador com
-  `node --test tests/weekly-goal.test.mjs`.
+- `smoke-boot.test.mjs`: carrega a tela inicial e confere que a tela de login
+  aparece sem nenhum erro de JavaScript.
+- `smoke-login.test.mjs`: cria um usuário fictício, faz login pela interface
+  (preenche e clica) e confere a tela de início (saudação, card do treino, abas).
+- `a11y-overlays.test.mjs`: painéis acessíveis — o foco entra no painel ao abrir, Tab fica preso,
+  Esc fecha e o foco volta ao botão de origem; fundo `inert`, `aria-labelledby` em todo
+  `role="dialog"`, fim do descanso anunciado em `aria-live` sem mover o foco, e todo botão só-ícone
+  com `aria-label` e alvo de toque de 44px (token `--tap`). O tamanho real é conferido por texto de
+  CSS (o jsdom não tem layout).
+- `behavior.test.mjs` (modos `login` e `app`): comportamentos da interface — copyright
+  no login; home sem atalhos removidos; botões Iniciar/Detalhes; ordem das seções de
+  Ajustes e "Sobre o app"; histórico do mês (5 linhas, Ver todas/Mostrar menos);
+  sessões antigas preservando as séries e o snapshot; grupo Cardio; grupo muscular em
+  exercício próprio.
+- `storage.test.mjs` (modos `migrate`, `failure`, `usage`; usa `fake-indexeddb`): migração
+  única localStorage → IndexedDB (foto e backups), falha do IndexedDB sem perder cópias,
+  e o medidor de espaço em uso. O arquivo também tem um modo `restore`, que não entra no
+  `npm test`.
+- `auth.test.mjs` (8 cenários, cada um num processo próprio): sessão sem expirar na virada
+  do dia, expiração após N dias sem abrir, treino ativo nunca derruba o login, e PIN
+  (PBKDF2, bloqueio após 5 erros).
 
+**Verificações de arquivos** (sem navegador, leem o código-fonte e o `dist/`):
+
+- `tokens.test.mjs`: tokens de cor claro/escuro em sincronia, `theme-color` igual ao `--bg`
+  de cada tema (código, `index.html` e `manifest.json`), CSS sem hack de especificidade,
+  todo `var(--x)` definido e sem `style=""` estático nas views.
+- `version.test.mjs`: a versão vem só do `package.json` e bate com `APP_VERSION`
+  (`dist/app.js`), com o `CACHE_NAME` (`dist/sw.js`) e com o regex que o service worker
+  usa para ler a versão publicada.
+- `sw.test.mjs`: roda o `public/sw.js` num sandbox com Cache API e `fetch` falsos —
+  responde do cache na hora e atualiza em segundo plano, primeira visita, offline,
+  `users.json` rede primeiro, aviso de versão nova, mensagens `SKIP_WAITING` e `CHECK_UPDATE`.
+
+**Testes unitários** (`node --test`, sem build e sem navegador; funções puras):
+
+- `weekly-goal.test.mjs`: meta semanal e sequência de semanas (virada de semana e de ano,
+  semana sem treino, descanso, início da semana).
+- `streak.test.mjs`: `computeWeeklyStreak` ligada ao store (meta, início da semana, descanso).
 - `progression.test.mjs`: `e1rm`, `suggestNext` (últimas 3 sessões, RPE, deload) e
-  `muscleGroupOf`/grupo escolhido em exercícios próprios.
-- `streak.test.mjs`: `computeWeeklyStreak` (store, meta, início da semana, descanso).
+  `muscleGroupOf` / grupo escolhido em exercício próprio.
 - `migrations.test.mjs`: todas as migrações de `src/data-migrations.js`.
-  Esses três rodam com `node --test` (sem build nem navegador) e fazem parte do `npm test`.
+- `rest-rules.test.mjs`: descanso entre exercícios, não inicia na última série do treino, superset, "repetir anterior".
+- `beep.test.mjs`: beep do timer com um `AudioContext` falso (destravar no toque, tocar,
+  não fazer nada sem suporte).
+- `login-hardening.test.mjs` (`node --test`): senha PBKDF2 nos dois formatos (novo e antigo),
+  `users.json` só com apelido, `gerar-hash.html` fora do `dist/`, a ferramenta gerando um hash
+  que o app aceita (salt único por usuário), e a notificação por `showNotification()` sem
+  `new Notification()`.
 
-Rode `npm test` sempre que mexer em algo estrutural (não é obrigatório para
-mudanças pequenas de texto/estilo, mas ajuda a pegar erro de referência
-quebrada cedo). Esses testes não substituem testar de verdade no iPhone —
-eles não sabem, por exemplo, se um botão ficou visualmente torto.
+Para rodar um arquivo só: `node tests/auth.test.mjs` (os de navegador simulado precisam do
+`dist/` — rode `npm run build` antes) ou `node --test tests/streak.test.mjs` (unitários).
+
+Esses testes não substituem testar de verdade no iPhone — eles não sabem, por exemplo,
+se um botão ficou visualmente torto, nem simulam Wake Lock, notificações ou a folha de
+compartilhamento do iOS.
 
 ## Ícones
 
@@ -161,7 +240,67 @@ Os arquivos enviados para esta reorganização não incluíam a pasta
 tinha para dentro de `public/icons/` antes de publicar — sem eles o app
 ainda funciona, só aparece sem ícone próprio na tela de início do iPhone.
 
+### Qualidade dos dados (etapa 13)
+
+- **Grupo de exercício próprio:** na edição do treino, exercícios fora da biblioteca (e que não são cardio) têm um seletor de grupo muscular, o mesmo do picker; grava em `ex.group`.
+- **Grupo principal:** exercícios que aparecem em mais de um grupo da biblioteca usam, nas estatísticas, o grupo definido em `src/data/exercise-primary-group.js`; os demais grupos só servem à navegação do picker.
+- **CSV:** o nome, o tipo e o grupo vêm primeiro do snapshot da sessão; nova coluna `grupo_muscular` (no fim); células que começam com `= + - @` ganham apóstrofo na frente.
+- **Importação:** `validateBackup` confere peso, reps e minutos (número finito ≥ 0; texto numérico é convertido, o resto vira vazio) e o tipo da série (desconhecido vira normal); descarta entradas que não são objetos e avisa quantas foram corrigidas.
+
+### Ícones da interface (Lucide)
+
+Os ícones da interface (`src/data/icons.js` e as abas em `src/data/constants.js`)
+vêm do **[Lucide](https://lucide.dev)**, licença **ISC**
+(Copyright (c) 2026 Lucide Icons and Contributors; copiados da versão
+`lucide-static` 1.57.0). Os SVGs foram copiados para `src/data/lucide-paths.js`,
+sem adicionar dependência. Padrão: viewBox 24x24, `fill="none"`,
+`stroke="currentColor"`, `stroke-width="2.2"`, linecap/linejoin `round`.
+A ilustração do logo (`src/icons-svg.js`) e os PNGs não são do Lucide.
+
+> ISC License — Permission to use, copy, modify, and/or distribute this software
+> for any purpose with or without fee is hereby granted, provided that the above
+> copyright notice and this permission notice appear in all copies.
+> THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+> REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
+> FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+> INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
+> OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+> TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
+> THIS SOFTWARE.
+
 ## Novidades desta versão
+
+### v9.9 — Visual e timer de descanso
+- **Timer de descanso**: agora também inicia depois da última série de um exercício quando ainda
+  há séries pendentes no treino (descanso antes do próximo exercício). Só não inicia na última
+  série do treino inteiro e em supersets (`shouldStartRest` em `src/workouts/rest-rules.js`).
+- **Séries em branco no editor viram 3** (`DEFAULT_SETS`), o mesmo número mostrado de exemplo.
+  Antes o treino era criado com 1 série e toda série era a "última", então o timer nunca aparecia.
+- **Tela do treino**: kg/reps e o contador de séries usam a fonte normal com números de largura
+  fixa (a fonte digital fica só no cronômetro e nos números de destaque); botão de concluir série
+  maior e com contorno; dica de A/D/F com botão *Entendi* (some depois de dispensada).
+- **Home**: ícones de Pausar/Iniciar no mesmo tamanho, ícone em *Finalizar*, streak zerado em
+  cinza, treino sem exercícios ganha o atalho *Montar este treino* (abre o editor).
+- **Treinos**: setas de ordem só no modo *Reordenar*; no editor, Força/Cardio, grupo, ordem,
+  Superset e Link ficam em *Mais opções*; rótulos sem caixa alta e exemplos mais claros.
+- **Histórico**: título "Outubro de 2026" (sem "De"); dias sem treino ficam neutros.
+- **Geral**: aba ativa legível no tema escuro (`--tab-active-bg/fg`), escala de fontes reduzida
+  (sem tamanhos quebrados como 12,5/13,5/14,5px), fonte Inter embutida para Android/PC
+  (`src/fonts/inter-latin.woff2`, licença OFL em `src/fonts/inter-OFL.txt`; no iPhone segue a SF
+  Pro), estados vazios com ícone e moldura no desktop (≥ 700px).
+
+### v9.9 — Correções de segurança e qualidade
+- **Importação mais segura**: `validateBackup` (`src/backup/validate.js`) agora só aceita chaves de
+  treino e ids com letras, números, `_` e `-`. Um arquivo com HTML nesses campos é recusado (ou o
+  item é descartado), e os ids também passam por `escapeAttr` ao montar a tela.
+- **Arquivo de importação acima de 25 MB é recusado** antes de ser lido.
+- **Tocar na notificação do lembrete abre/foca o app** (`notificationclick` no `public/sw.js`).
+- **CI**: o workflow agora roda `npm run lint` e `npm run format:check`; o build duplicado foi
+  removido (o `npm test` já builda). Código todo formatado com Prettier; ESLint sem erros.
+- Dependências: removidos `@babel/*` (não usados); `npm audit` sem alertas.
+- `manifest.json` ganhou `id`; `withRetry` passa a aguardar funções assíncronas.
+- **Pendente (manual)**: regenerar os usuários do `users.json` com `tools/gerar-hash.html` — os
+  registros atuais ainda estão no formato antigo (SHA-256 simples).
 
 ### v8.5 — Timer de descanso
 - **Beep ao fim do descanso** (Web Audio, 880 Hz, ~0,2 s). O áudio é liberado no primeiro
@@ -169,7 +308,7 @@ ainda funciona, só aparece sem ícone próprio na tela de início do iPhone.
   em Ajustes → Treino → *Som ao fim do descanso* (`settings.beepEnabled`, padrão ligado; ao ligar
   toca uma prévia). Não apita se o descanso acabou há mais de 3 s (ex.: ao voltar ao app).
 - **Última série não inicia descanso**: marcar a última série da lista do exercício não dispara
-  o timer (`src/workouts/rest-rules.js`). **Superset continua como antes** (nunca inicia timer).
+  o timer (`src/workouts/rest-rules.js`). *(Mudou na v9.9: só a última série do treino inteiro não inicia.)* **Superset continua como antes** (nunca inicia timer).
 - **Repetir anterior**: chip sob cada série (a partir da 2ª, enquanto não marcada) que copia
   peso e reps da série acima. Cardio não tem o botão.
 - **Timer acima da tab bar**: o timer (bottom 10px) cobria a tab bar (bottom 8px) por inteiro.
@@ -405,7 +544,12 @@ ainda funciona, só aparece sem ícone próprio na tela de início do iPhone.
   junto com os treinos A/B/C.
 - **Lembrete diário**: ative um horário para o app te avisar (por
   notificação, se permitida, e por um aviso dentro do app) que ainda não
-  treinou hoje. **Importante:** isso só funciona enquanto o app está aberto
+  treinou hoje. A notificação do sistema é disparada por
+  `registration.showNotification()` via service worker (`src/notify.js`), o único
+  caminho suportado em PWA no iPhone; se não houver permissão ou service worker,
+  o aviso dentro do app (toast) continua aparecendo. Em Ajustes o app diz
+  explicitamente "o lembrete só aparece com o app aberto", e o mesmo vale para o
+  aviso de fim de descanso. Não há Web Push. **Importante:** isso só funciona enquanto o app está aberto
   ou quando você o reabre — o iPhone não permite alarmes em segundo plano
   para apps instalados via Safari sem um servidor de notificações próprio
   (Web Push exigiria backend). Se quiser lembrete garantido mesmo com o app
@@ -558,10 +702,21 @@ cerca de 1 minuto — não precisa mais rodar `npm run build` nem subir a
 pasta `dist/` manualmente. Depois, abra o app no iPhone e toque em
 **Preferências → Atualizar** (ou espere o aviso "Nova versão disponível").
 
-A cada versão nova, troque o número em dois lugares (o mesmo nos dois):
-`CACHE_NAME` no `public/sw.js` e `APP_VERSION` no `src/data/constants.js`.
-Não é obrigatório para o botão Atualizar funcionar, mas deixa a versão
-mostrada no app correta.
+**Como versionar:** a cada versão nova, troque só o `"version"` no `package.json`
+(ex.: `8.5.0` → `8.6.0`) e, se quiser, descreva a mudança em "Novidades desta versão"
+neste README. Não existe mais versão escrita à mão no código (o teste `version.test.mjs`
+garante isso). O `package.json` alimenta sozinho:
+
+- o `APP_VERSION` mostrado em Ajustes → Sobre o app (via `__APP_VERSION__` no build);
+- o `CACHE_NAME` do `public/sw.js` (troca o placeholder no `dist/`);
+- o comentário `/*! APP_VERSION="..." */` no topo do `dist/app.js`, que o service worker lê.
+
+Depois é só commit e `git push` na `main`: o Actions roda `npm test`, builda e publica.
+
+O app abre na hora com o que está no cache e baixa a versão
+nova em segundo plano; o aviso "Nova versão disponível" aparece em seguida.
+Mudar a versão não é obrigatório para o aviso funcionar (qualquer arquivo
+diferente no servidor é detectado), mas deixa o número mostrado no app correto.
 
 **Ícone da tela de início:** o iOS guarda o ícone no momento em que o atalho é
 criado e não permite que o app o troque depois. Se você mudar os arquivos em

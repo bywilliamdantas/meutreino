@@ -42,35 +42,45 @@ if (MODE === "app") {
   const data = {
     order: ["A", "B", "C"],
     workouts: {
-      A: { name: "Treino A", exercises: [
-        { id: "e1", name: "Supino reto com barra", sets: "5", reps: "10", rest: "", mins: "", type: "strength" },
-        { id: "e2", name: "Crucifixo", sets: "4", reps: "12", rest: "", mins: "", type: "strength" },
-        { id: "e3", name: "Esteira", sets: "", reps: "", rest: "", mins: "20", type: "cardio" },
-      ] },
+      A: {
+        name: "Treino A",
+        exercises: [
+          { id: "e1", name: "Supino reto com barra", sets: "5", reps: "10", rest: "", mins: "", type: "strength" },
+          { id: "e2", name: "Crucifixo", sets: "4", reps: "12", rest: "", mins: "", type: "strength" },
+          { id: "e3", name: "Esteira", sets: "", reps: "", rest: "", mins: "20", type: "cardio" }
+        ]
+      },
       B: { name: "Treino B", exercises: [] },
-      C: { name: "Treino C", exercises: [] },
+      C: { name: "Treino C", exercises: [] }
     },
-    sessions,
+    sessions
   };
   localStorage.setItem("gym-data:u", JSON.stringify(data));
   localStorage.setItem("gym-session", JSON.stringify({ username: "u", name: "U", loginDay: key(now) }));
-  global.fetch = async (url) => String(url).includes("users.json")
-    ? { ok: true, json: async () => ({ users: [{ username: "u", name: "U", salt: "x", hash: "y" }] }) }
-    : { ok: false, status: 404, json: async () => ({}) };
+  global.fetch = async (url) =>
+    String(url).includes("users.json")
+      ? { ok: true, json: async () => ({ users: [{ username: "u", name: "U", salt: "x", hash: "y" }] }) }
+      : { ok: false, status: 404, json: async () => ({}) };
 }
 
 const errors = [];
-process.on("unhandledRejection", (e) => errors.push("(promise) " + (e && e.stack || e)));
+process.on("unhandledRejection", (e) => errors.push("(promise) " + ((e && e.stack) || e)));
 window.addEventListener("error", (e) => errors.push((e.error && e.error.stack) || e.message));
 await import("../dist/app.js");
 const wait = (ms = 250) => new Promise((r) => setTimeout(r, ms));
 await wait(700);
 
 let fails = 0;
-const check = (name, cond, extra = "") => { console.log((cond ? "OK   " : "FALHA") + " - " + name + (cond ? "" : " " + extra)); if (!cond) fails++; };
+const check = (name, cond, extra = "") => {
+  console.log((cond ? "OK   " : "FALHA") + " - " + name + (cond ? "" : " " + extra));
+  if (!cond) fails++;
+};
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => [...document.querySelectorAll(s)];
-const tab = async (id) => { $(`[data-role="gotab"][data-tab="${id}"]`).click(); await wait(); };
+const tab = async (id) => {
+  $(`[data-role="gotab"][data-tab="${id}"]`).click();
+  await wait();
+};
 const stored = () => JSON.parse(localStorage.getItem("gym-data:u"));
 
 if (MODE === "login") {
@@ -82,92 +92,163 @@ if (MODE === "login") {
   check("3. home sem 'Último recorde'", !$("#goLastRecord") && !/Último recorde/.test($("#app").textContent));
   check("3. home sem 'Registrar peso' / 'Ver histórico'", !$("#qaWeight") && !$("#qaHistory"));
   check("4. Iniciar e Detalhes existem", !!$("#startBtn") && !!$("#statusBtn"));
-  const css = fs.readFileSync(new URL("../src/styles/design.css", import.meta.url), "utf8") + fs.readFileSync(new URL("../src/styles/home.css", import.meta.url), "utf8");
+  const css =
+    fs.readFileSync(new URL("../src/styles/design.css", import.meta.url), "utf8") + fs.readFileSync(new URL("../src/styles/home.css", import.meta.url), "utf8");
   check("4. botões do hero com colunas iguais", !/hero-v2-actions\{[^}]*(1\.[0-9]+fr 1fr)/.test(css));
 
   // 6. Ajustes
   await tab("ajustes");
   const titles = $$(".section-title").map((e) => e.textContent.trim());
-  check("6. ordem das seções de Ajustes", JSON.stringify(titles) === JSON.stringify(["Conta", "Treino", "Aparência", "Dados e backup", "Sobre o app"]), JSON.stringify(titles));
+  check(
+    "6. ordem das seções de Ajustes",
+    JSON.stringify(titles) === JSON.stringify(["Conta", "Treino", "Aparência", "Dados e backup", "Sobre o app"]),
+    JSON.stringify(titles)
+  );
   check("6. 'Sobre o app' tem versão e botão Atualizar", !!$("#checkUpdateBtn") && !!$("#appVersionText"));
-  $("#openDadosBackupBtn").click(); await wait();
+  $("#openDadosBackupBtn").click();
+  await wait();
   check("6. página Dados e Backup sem 'Sobre o app'", !/Sobre o app/i.test($("#app").textContent) && !$("#checkUpdateBtn"));
-  $("#dadosBackupBackBtn").click(); await wait();
+  $("#dadosBackupBackBtn").click();
+  await wait();
 
   // 5. Histórico compacto
   await tab("historico");
-  $("#calPrevBtn").click(); await wait();
+  $("#calPrevBtn").click();
+  await wait();
   check("5. mês com 10 dias mostra só 5 inicialmente", $$(".month-session-row").length === 5, String($$(".month-session-row").length));
   check("5. resumo do mês", /10 dias · 10 treinos/.test($(".month-sessions-summary")?.textContent || ""), $(".month-sessions-summary")?.textContent);
-  $("#monthSessionsToggle").click(); await wait();
+  $("#monthSessionsToggle").click();
+  await wait();
   check("5. 'Ver todas' expande para 10", $$(".month-session-row").length === 10);
-  $("#monthSessionsToggle").click(); await wait();
+  $("#monthSessionsToggle").click();
+  await wait();
   check("5. 'Mostrar menos' recolhe", $$(".month-session-row").length === 5);
 
   // 1. séries preservadas
-  $("#monthSessionsToggle").click(); await wait();
+  $("#monthSessionsToggle").click();
+  await wait();
   const row = $$(".month-session-row").find((r) => r.dataset.datekey === pk(1));
-  row.click(); await wait();
+  row.click();
+  await wait();
   check("1. sessão antiga mostra só o exercício registrado", $$(".sheet-ex-row").length === 1, String($$(".sheet-ex-row").length));
   check("1. sessão antiga mantém 3 séries (treino atual tem 5)", $$(".sheet-set").length === 3, String($$(".sheet-set").length));
-  $$('[data-role="rplus"]')[0].click(); await wait(500);
+  $$('[data-role="rplus"]')[0].click();
+  await wait(500);
   const s1 = stored().sessions[pk(1)][0];
-  check("1. após editar, séries salvas continuam 3", s1.log.e1.length === 3 && Object.keys(s1.log).join() === "e1", JSON.stringify(Object.keys(s1.log)) + s1.log.e1.length);
+  check(
+    "1. após editar, séries salvas continuam 3",
+    s1.log.e1.length === 3 && Object.keys(s1.log).join() === "e1",
+    JSON.stringify(Object.keys(s1.log)) + s1.log.e1.length
+  );
   check("1. sessão guarda foto do treino (snapshot)", Array.isArray(s1.snapshot) && s1.snapshot[0]?.name === "Supino reto com barra");
-  $$('[data-role="sheetletter"]')[1].click(); await wait();
+  $$('[data-role="sheetletter"]')[1].click();
+  await wait();
   check("1. trocar letra de treino registrado é bloqueado", stored().sessions[pk(1)][0].letter === "A");
-  $("#sheetClose").click(); await wait();
+  $("#sheetClose").click();
+  await wait();
 
   // 2. cardio
   await tab("treinos");
-  $('[data-role="openworkout"][data-letter="B"]').click(); await wait();
-  $('[data-role="addex"]').click(); await wait();
+  $('[data-role="openworkout"][data-letter="B"]').click();
+  await wait();
+  $('[data-role="addex"]').click();
+  await wait();
   const groups = $$(".ex-picker-group-title span:first-child").map((e) => e.textContent);
   check("2. grupo Cardio na lista de exercícios", groups.includes("Cardio"), groups.join());
   const input = $("#exPickerSearch");
   for (const name of ["Esteira", "Bicicleta", "Escada"]) {
-    input.value = name; input.dispatchEvent(new window.Event("input", { bubbles: true })); await wait(100);
-    check(`2. '${name}' disponível`, $$(".ex-picker-item span").some((s) => s.textContent.trim() === name));
+    input.value = name;
+    input.dispatchEvent(new window.Event("input", { bubbles: true }));
+    await wait(100);
+    check(
+      `2. '${name}' disponível`,
+      $$(".ex-picker-item span").some((s) => s.textContent.trim() === name)
+    );
   }
   for (const name of ["Esteira", "Escada"]) {
-    input.value = name; input.dispatchEvent(new window.Event("input", { bubbles: true })); await wait(100);
+    input.value = name;
+    input.dispatchEvent(new window.Event("input", { bubbles: true }));
+    await wait(100);
     const cb = $$('.ex-picker-item input[type="checkbox"][data-name]').find((c) => c.dataset.name === name);
-    cb.checked = true; cb.dispatchEvent(new window.Event("change", { bubbles: true }));
+    cb.checked = true;
+    cb.dispatchEvent(new window.Event("change", { bubbles: true }));
   }
-  $("#exPickerConfirm").click(); await wait(400);
+  $("#exPickerConfirm").click();
+  await wait(400);
   const exs = stored().workouts.B.exercises;
   check("2. exercícios de cardio entram com tipo cardio", exs.length === 2 && exs.every((e) => e.type === "cardio"), JSON.stringify(exs.map((e) => e.type)));
 
   // 8. exercício fora da biblioteca: escolher o grupo muscular ao criar
-  $('[data-role="addex"]').click(); await wait();
+  $('[data-role="addex"]').click();
+  await wait();
   const search = $("#exPickerSearch");
-  search.value = "Remada do meu jeito"; search.dispatchEvent(new window.Event("input", { bubbles: true })); await wait(100);
+  search.value = "Remada do meu jeito";
+  search.dispatchEvent(new window.Event("input", { bubbles: true }));
+  await wait(100);
   const sel = $("#exPickerGroup");
   check("8. seletor de grupo aparece para nome fora da biblioteca", !!sel);
   check("8. seletor não oferece Cardio e começa em 'Outros'", !!sel && sel.value === "" && ![...sel.options].some((o) => o.value === "Cardio"));
-  sel.value = "Costas / Dorsal"; sel.dispatchEvent(new window.Event("change", { bubbles: true }));
-  search.value = "Remada do meu jeito "; search.dispatchEvent(new window.Event("input", { bubbles: true })); await wait(100);
+  sel.value = "Costas / Dorsal";
+  sel.dispatchEvent(new window.Event("change", { bubbles: true }));
+  search.value = "Remada do meu jeito ";
+  search.dispatchEvent(new window.Event("input", { bubbles: true }));
+  await wait(100);
   check("8. grupo escolhido sobrevive ao re-render da busca", $("#exPickerGroup").value === "Costas / Dorsal");
   const cc = $("#exPickerCustomCheck");
-  cc.checked = true; cc.dispatchEvent(new window.Event("change", { bubbles: true }));
-  $("#exPickerConfirm").click(); await wait(400);
+  cc.checked = true;
+  cc.dispatchEvent(new window.Event("change", { bubbles: true }));
+  $("#exPickerConfirm").click();
+  await wait(400);
   const custom = stored().workouts.B.exercises.find((e) => e.name === "Remada do meu jeito");
   check("8. exercício próprio grava o grupo escolhido", !!custom && custom.group === "Costas / Dorsal", JSON.stringify(custom));
 
-  $('[data-role="addex"]').click(); await wait();
+  $('[data-role="addex"]').click();
+  await wait();
   const search2 = $("#exPickerSearch");
-  search2.value = "Exercício sem grupo"; search2.dispatchEvent(new window.Event("input", { bubbles: true })); await wait(100);
+  search2.value = "Exercício sem grupo";
+  search2.dispatchEvent(new window.Event("input", { bubbles: true }));
+  await wait(100);
   const cc2 = $("#exPickerCustomCheck");
-  cc2.checked = true; cc2.dispatchEvent(new window.Event("change", { bubbles: true }));
-  $("#exPickerConfirm").click(); await wait(400);
+  cc2.checked = true;
+  cc2.dispatchEvent(new window.Event("change", { bubbles: true }));
+  $("#exPickerConfirm").click();
+  await wait(400);
   const noGroup = stored().workouts.B.exercises.find((e) => e.name === "Exercício sem grupo");
   check("8. sem escolher grupo, nada é gravado (continua em 'Outros')", !!noGroup && noGroup.group === undefined, JSON.stringify(noGroup));
 
-  $('[data-role="addex"]').click(); await wait();
+  $('[data-role="addex"]').click();
+  await wait();
   const search3 = $("#exPickerSearch");
-  search3.value = "Esteira"; search3.dispatchEvent(new window.Event("input", { bubbles: true })); await wait(100);
+  search3.value = "Esteira";
+  search3.dispatchEvent(new window.Event("input", { bubbles: true }));
+  await wait(100);
   check("8. nome da biblioteca não mostra o seletor de grupo", !$("#exPickerGroup"));
-  $("#sheetClose").click(); await wait();
+  $("#sheetClose").click();
+  await wait();
+
+  // 9. editar o grupo muscular de exercício próprio já criado (na edição do treino)
+  const groupSels = $$('[data-role="exgroup"]');
+  const rowOf = (name) => $$(".exercise-row").find((r) => r.querySelector(".ex-name-text")?.textContent.trim() === name);
+  check("9. exercício próprio mostra o seletor de grupo (e só ele)", groupSels.length === 2, String(groupSels.length));
+  check("9. esteira (cardio da biblioteca) não mostra o seletor", !rowOf("Esteira")?.querySelector('[data-role="exgroup"]'));
+  const gsel = rowOf("Remada do meu jeito")?.querySelector('[data-role="exgroup"]');
+  check("9. seletor começa no grupo gravado", !!gsel && gsel.value === "Costas / Dorsal", gsel && gsel.value);
+  check("9. seletor tem as mesmas opções do picker (sem Cardio)", !!gsel && gsel.options.length > 10 && ![...gsel.options].some((o) => o.value === "Cardio"));
+  gsel.value = "Bíceps";
+  gsel.dispatchEvent(new window.Event("change", { bubbles: true }));
+  await wait(400);
+  const edited = stored().workouts.B.exercises.find((e) => e.name === "Remada do meu jeito");
+  check("9. editar o grupo grava em ex.group", edited.group === "Bíceps", JSON.stringify(edited));
+  const gsel2 = rowOf("Exercício sem grupo")?.querySelector('[data-role="exgroup"]');
+  check("9. exercício sem grupo começa em 'Outros'", !!gsel2 && gsel2.value === "");
+  gsel2.value = "Tríceps";
+  gsel2.dispatchEvent(new window.Event("change", { bubbles: true }));
+  await wait(400);
+  check("9. escolher grupo num exercício sem grupo grava", stored().workouts.B.exercises.find((e) => e.name === "Exercício sem grupo").group === "Tríceps");
+  gsel2.value = "";
+  gsel2.dispatchEvent(new window.Event("change", { bubbles: true }));
+  await wait(400);
+  check("9. voltar para 'Outros' remove ex.group", stored().workouts.B.exercises.find((e) => e.name === "Exercício sem grupo").group === undefined);
 }
 check("sem erros de JavaScript", errors.length === 0, errors.join("\n"));
 process.exit(fails ? 1 : 0);

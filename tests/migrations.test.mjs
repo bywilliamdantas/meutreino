@@ -95,12 +95,15 @@ test("migrateSessions: é idempotente", () => {
 /* ---------- migrateSessionSnapshots ---------- */
 
 const workoutsFixture = () => ({
-  A: { name: "A", exercises: [
-    { id: "e1", name: "Supino", type: "strength", sets: 3, reps: "8", rest: 90 },
-    { id: "e2", name: "Esteira", type: "cardio", mins: 20 },
-    { id: "e3", name: "Meu exercício", group: "Peitoral" },
-    { id: "e4", name: "Sem séries" }
-  ] },
+  A: {
+    name: "A",
+    exercises: [
+      { id: "e1", name: "Supino", type: "strength", sets: 3, reps: "8", rest: 90 },
+      { id: "e2", name: "Esteira", type: "cardio", mins: 20 },
+      { id: "e3", name: "Meu exercício", group: "Peitoral" },
+      { id: "e4", name: "Sem séries" }
+    ]
+  },
   R: { name: "Descanso", isRest: true, exercises: [] }
 });
 
@@ -111,7 +114,10 @@ test("migrateSessionSnapshots: cria a foto só com exercícios que têm séries"
   };
   migrateSessionSnapshots(s);
   const snap = s.sessions["2026-10-01"][0].snapshot;
-  assert.deepEqual(snap.map(e => e.id), ["e1", "e2"]);
+  assert.deepEqual(
+    snap.map((e) => e.id),
+    ["e1", "e2"]
+  );
   assert.deepEqual(snap[0], { id: "e1", name: "Supino", type: "strength", sets: 3, reps: "8", rest: 90 });
   assert.deepEqual(snap[1], { id: "e2", name: "Esteira", type: "cardio", mins: 20 });
 });
@@ -179,6 +185,8 @@ test("migrateSettings: dados antigos recebem todos os padrões", () => {
   assert.deepEqual(s.settings, {
     reminder: { enabled: false, time: "18:00", lastNotifiedDate: null },
     lastBackupAt: null,
+    backupEvery: 7,
+    backupSnoozedUntil: null,
     workoutsCollapsed: false,
     collapsedSections: {},
     restDuration: 90,
@@ -194,7 +202,17 @@ test("migrateSettings: dados antigos recebem todos os padrões", () => {
 });
 
 test("migrateSettings: preserva valores já escolhidos", () => {
-  const s = { settings: { unit: "lb", restDuration: 120, weekStartsMonday: true, keepAwake: false, beepEnabled: false, displayName: "Ana", reminder: { enabled: true, time: "07:30", lastNotifiedDate: "2026-10-01" } } };
+  const s = {
+    settings: {
+      unit: "lb",
+      restDuration: 120,
+      weekStartsMonday: true,
+      keepAwake: false,
+      beepEnabled: false,
+      displayName: "Ana",
+      reminder: { enabled: true, time: "07:30", lastNotifiedDate: "2026-10-01" }
+    }
+  };
   migrateSettings(s);
   assert.equal(s.settings.unit, "lb");
   assert.equal(s.settings.restDuration, 120);
@@ -212,7 +230,11 @@ test("migrateSettings: unidade inválida volta para kg", () => {
 });
 
 test("migrateSettings: weeklyGoal é arredondada, limitada a 14 e inválida vira null", () => {
-  const goal = (v) => { const s = { settings: { weeklyGoal: v } }; migrateSettings(s); return s.settings.weeklyGoal; };
+  const goal = (v) => {
+    const s = { settings: { weeklyGoal: v } };
+    migrateSettings(s);
+    return s.settings.weeklyGoal;
+  };
   assert.equal(goal(3), 3);
   assert.equal(goal(3.6), 4);
   assert.equal(goal(99), 14);

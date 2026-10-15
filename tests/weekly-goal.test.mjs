@@ -2,14 +2,7 @@
 // Rodam sem build e sem navegador: node --test tests/weekly-goal.test.mjs
 import test from "node:test";
 import assert from "node:assert/strict";
-import {
-  defaultWeeklyGoal,
-  normalizeGoal,
-  resolveWeeklyGoal,
-  startOfWeek,
-  weekSessionCount,
-  weeklyStreak,
-} from "../src/workouts/weekly-goal.js";
+import { defaultWeeklyGoal, normalizeGoal, resolveWeeklyGoal, startOfWeek, weekSessionCount, weeklyStreak } from "../src/workouts/weekly-goal.js";
 
 const isRest = (letter) => letter === "R";
 
@@ -24,8 +17,7 @@ function sessionsOf(...entries) {
 }
 
 const d = (s) => new Date(`${s}T12:00:00`); // meio-dia local: sem ambiguidade de fuso
-const key = (date) =>
-  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+const key = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
 // Calendário de referência (outubro de 2026):
 //   dom 04 | seg 05 | ter 06 | qua 07 | qui 08 | sex 09 | sáb 10 | dom 11 | seg 12
@@ -105,11 +97,7 @@ test("virada de semana (início segunda): domingo fecha a semana, segunda abre a
 
 test("virada de semana: sequência que cruza a virada do ano", () => {
   // Meta 2. Semanas (início seg): 21-27/12, 28/12-03/01 (cruza o ano), 04-10/01.
-  const sessions = sessionsOf(
-    "2026-12-22", "2026-12-24",
-    "2026-12-29", "2027-01-02",
-    "2027-01-05", "2027-01-07",
-  );
+  const sessions = sessionsOf("2026-12-22", "2026-12-24", "2026-12-29", "2027-01-02", "2027-01-05", "2027-01-07");
   const now = d("2027-01-08");
   assert.equal(weeklyStreak({ sessions, goal: 2, now, mondayStart: true, isRest }), 3);
 });
@@ -133,11 +121,7 @@ test("virada de semana: bater a meta na semana atual soma +1", () => {
 
 test("semana sem treino no meio quebra a sequência", () => {
   // Meta 2. Semanas (início seg): 28/09 ok | 05/10 vazia | 12/10 ok | 19/10 (atual) ok.
-  const sessions = sessionsOf(
-    "2026-09-29", "2026-10-01",
-    "2026-10-13", "2026-10-15",
-    "2026-10-20", "2026-10-22",
-  );
+  const sessions = sessionsOf("2026-09-29", "2026-10-01", "2026-10-13", "2026-10-15", "2026-10-20", "2026-10-22");
   const now = d("2026-10-22");
   assert.equal(weeklyStreak({ sessions, goal: 2, now, mondayStart: true, isRest }), 2);
 });
@@ -169,8 +153,11 @@ test("dias de descanso planejados não quebram a sequência semanal", () => {
   // Caso real do pedido: ciclo A/B/C com folgas no meio, meta 3 (seg/qua/sex).
   // Antes ("dias seguidos") isso nunca passava de 1.
   const sessions = sessionsOf(
-    "2026-09-28", "2026-09-30", "2026-10-02", // semana passada: 3 de 3
-    "2026-10-05", "2026-10-07",               // esta semana até quinta: 2 de 3 (em andamento)
+    "2026-09-28",
+    "2026-09-30",
+    "2026-10-02", // semana passada: 3 de 3
+    "2026-10-05",
+    "2026-10-07" // esta semana até quinta: 2 de 3 (em andamento)
   );
   assert.equal(weeklyStreak({ sessions, goal: 3, now: QUI, mondayStart: true, isRest }), 1);
   const comSexta = { ...sessions, ...sessionsOf("2026-10-09") };

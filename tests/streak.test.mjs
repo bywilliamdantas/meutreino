@@ -40,27 +40,34 @@ test("computeWeeklyStreak: sem sessões → 0", () => {
 
 test("computeWeeklyStreak: semanas seguidas batendo a meta (início segunda)", () => {
   // Semanas: 21/09, 28/09 e 05/10 (atual, já bateu a meta de 2)
-  add("2026-09-22"); add("2026-09-24");
-  add("2026-09-29"); add("2026-10-01");
-  add("2026-10-06"); add("2026-10-07");
+  add("2026-09-22");
+  add("2026-09-24");
+  add("2026-09-29");
+  add("2026-10-01");
+  add("2026-10-06");
+  add("2026-10-07");
   assert.equal(computeWeeklyStreak(), 3);
 });
 
 test("computeWeeklyStreak: semana atual em andamento não quebra a sequência", () => {
-  add("2026-09-29"); add("2026-10-01"); // semana anterior ok
+  add("2026-09-29");
+  add("2026-10-01"); // semana anterior ok
   add("2026-10-06"); // semana atual: 1 de 2 (ainda dá tempo)
   assert.equal(computeWeeklyStreak(), 1);
 });
 
 test("computeWeeklyStreak: semana passada abaixo da meta zera a sequência", () => {
   add("2026-09-29"); // 1 de 2 na semana passada
-  add("2026-10-06"); add("2026-10-07"); // semana atual ok
+  add("2026-10-06");
+  add("2026-10-07"); // semana atual ok
   assert.equal(computeWeeklyStreak(), 1); // só a atual conta
 });
 
 test("computeWeeklyStreak: respeita weekStartsMonday", () => {
   // Dom 04/10 + seg 05/10 + ter 06/10, meta 2, hoje quinta 08/10.
-  add("2026-10-04"); add("2026-10-05"); add("2026-10-06");
+  add("2026-10-04");
+  add("2026-10-05");
+  add("2026-10-06");
   // Início domingo: os 3 treinos caem na mesma semana (3 ≥ 2) → sequência 1.
   store.data.settings.weekStartsMonday = false;
   assert.equal(computeWeeklyStreak(), 1);
@@ -68,14 +75,17 @@ test("computeWeeklyStreak: respeita weekStartsMonday", () => {
   // mas sem o treino de domingo a semana atual continuaria batendo; confirma a divisão pelo dia:
   store.data.settings.weekStartsMonday = true;
   store.data.sessions = {};
-  add("2026-10-04"); add("2026-10-05");
+  add("2026-10-04");
+  add("2026-10-05");
   assert.equal(computeWeeklyStreak(), 0); // 1 na semana anterior + 1 na atual: nenhuma bate a meta 2
   store.data.settings.weekStartsMonday = false;
   assert.equal(computeWeeklyStreak(), 1); // com início domingo, os 2 estão na mesma semana
 });
 
 test("computeWeeklyStreak: dias de descanso não contam para a meta", () => {
-  add("2026-10-06", "A"); add("2026-10-07", "R"); add("2026-10-08", "R");
+  add("2026-10-06", "A");
+  add("2026-10-07", "R");
+  add("2026-10-08", "R");
   assert.equal(computeWeeklyStreak(), 0); // só 1 treino de verdade
   add("2026-10-08", "B");
   assert.equal(computeWeeklyStreak(), 1);
@@ -83,14 +93,16 @@ test("computeWeeklyStreak: dias de descanso não contam para a meta", () => {
 
 test("computeWeeklyStreak: meta null usa o padrão (treinos sem descanso no ciclo)", () => {
   setup({ goal: null, order: ["A", "B", "C", "R"] }); // padrão = 3
-  add("2026-10-05"); add("2026-10-06");
+  add("2026-10-05");
+  add("2026-10-06");
   assert.equal(computeWeeklyStreak(), 0);
   add("2026-10-07");
   assert.equal(computeWeeklyStreak(), 1);
 });
 
 test("computeWeeklyStreak: duas sessões no mesmo dia contam as duas", () => {
-  add("2026-10-06", "A"); add("2026-10-06", "B");
+  add("2026-10-06", "A");
+  add("2026-10-06", "B");
   assert.equal(computeWeeklyStreak(), 1);
 });
 

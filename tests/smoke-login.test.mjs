@@ -3,9 +3,7 @@ import fs from "fs";
 import crypto from "crypto";
 
 const indexHtml = fs.readFileSync(new URL("../dist/index.html", import.meta.url), "utf8");
-const cleanedHtml = indexHtml
-  .replace(/<script type="module".*?<\/script>/s, "")
-  .replace(/<link rel="stylesheet".*?>/s, "");
+const cleanedHtml = indexHtml.replace(/<script type="module".*?<\/script>/s, "").replace(/<link rel="stylesheet".*?>/s, "");
 
 const dom = new JSDOM(cleanedHtml, { url: "https://example.github.io/meus-treinos/", pretendToBeVisual: true });
 const { window } = dom;
@@ -15,7 +13,7 @@ global.document = window.document;
 Object.defineProperty(global, "navigator", { value: window.navigator, writable: true, configurable: true });
 global.localStorage = window.localStorage;
 Object.defineProperty(global, "location", { value: window.location, writable: true, configurable: true });
-global.matchMedia = window.matchMedia || (() => ({ matches: false, addEventListener(){}, addListener(){} }));
+global.matchMedia = window.matchMedia || (() => ({ matches: false, addEventListener() {}, addListener() {} }));
 window.matchMedia = global.matchMedia;
 global.CustomEvent = window.CustomEvent;
 global.HTMLElement = window.HTMLElement;
@@ -29,13 +27,16 @@ global.Node = window.Node;
 navigator.serviceWorker = {
   register: async () => ({ addEventListener() {}, waiting: null }),
   addEventListener() {},
-  controller: null,
+  controller: null
 };
 
 // senha de teste conhecida — recria exatamente o sha256Hex(salt+senha) do próprio app
 const SALT = "abc123";
 const PASSWORD = "testpass";
-const hash = crypto.createHash("sha256").update(SALT + PASSWORD, "utf8").digest("hex");
+const hash = crypto
+  .createHash("sha256")
+  .update(SALT + PASSWORD, "utf8")
+  .digest("hex");
 const FAKE_USERS = { users: [{ username: "teste", name: "Usuário Teste", salt: SALT, hash }] };
 
 global.fetch = async (url) => {
@@ -45,7 +46,7 @@ global.fetch = async (url) => {
 };
 
 const errors = [];
-process.on("unhandledRejection", (e) => errors.push("(promise) " + (e && e.stack || e)));
+process.on("unhandledRejection", (e) => errors.push("(promise) " + ((e && e.stack) || e)));
 window.addEventListener("error", (e) => errors.push((e.error && e.error.stack) || e.message));
 
 await import("../dist/app.js");
