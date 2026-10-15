@@ -270,6 +270,11 @@ A ilustração do logo (`src/icons-svg.js`) e os PNGs não são do Lucide.
 
 ## Novidades desta versão
 
+### v10.0 — Novo visual e gestos na lista de Treinos
+- Cache do app atualizado para `meus-treinos-v10.0.0` (os caches antigos são apagados na ativação).
+- Lista de Treinos: arrastar para a direita revela **Editar**; para a esquerda revela **Delete** (com "Desfazer"). Setas do teclado também abrem as ações.
+- Novo visual (src/styles/v10.css): Início com chips de exercícios e cards de estatística, semana com letras dos treinos, filtro segmentado, botão de iniciar por treino, resumo do mês no Histórico e aba ativa em laranja.
+
 ### v9.9 — Visual e timer de descanso
 - **Timer de descanso**: agora também inicia depois da última série de um exercício quando ainda
   há séries pendentes no treino (descanso antes do próximo exercício). Só não inicia na última

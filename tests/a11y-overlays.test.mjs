@@ -43,7 +43,7 @@ const uses = (bodies, props) => bodies.some((b) => props.some((p) => new RegExp(
 const boxOk = (cls) => uses(rulesFor(cls), ["width", "min-width"]) && uses(rulesFor(cls), ["height", "min-height"]);
 const hitOk = (cls) => uses(rulesFor(cls, "::after"), ["inset"]);
 // classes com alvo de 44px por caixa real ou por área invisível (::after)
-const TAP_BOX = ["icon-btn", "progress-btn", "ex-del", "cal-nav", "sds-del", "reorder-btn", "greet-bell", "greet-avatar", "pw-toggle", "ex-link"];
+const TAP_BOX = ["icon-btn", "progress-btn", "ex-del", "cal-nav", "sds-del", "reorder-btn", "greet-bell", "greet-avatar", "pw-toggle", "ex-link", "wl-play", "tab-title-add"];
 const TAP_HIT = ["sheet-set-check", "perfil-avatar-edit"];
 TAP_BOX.forEach((c) => check(`alvo 44px (caixa): .${c}`, boxOk(c)));
 TAP_HIT.forEach((c) => check(`alvo 44px (área extra ::after): .${c}`, hitOk(c)));

@@ -1,6 +1,6 @@
 {
   "name": "meus-treinos",
-  "version": "9.9.0",
+  "version": "10.0.0",
   "description": "App para organizar treinos A/B/C, ciclo automático e histórico. PWA instalável no iPhone.",
   "private": true,
   "type": "module",
@@ -8,7 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "npm run build --silent && node tests/smoke-boot.test.mjs && node tests/smoke-login.test.mjs && node tests/behavior.test.mjs login && node tests/behavior.test.mjs app && node tests/storage.test.mjs migrate && node tests/storage.test.mjs failure && node tests/storage.test.mjs usage && node tests/auth.test.mjs && node tests/tokens.test.mjs && node tests/legibility.test.mjs && node tests/a11y-overlays.test.mjs && node --test tests/weekly-goal.test.mjs tests/rest-rules.test.mjs tests/beep.test.mjs tests/progression.test.mjs tests/streak.test.mjs tests/migrations.test.mjs tests/sw.test.mjs tests/version.test.mjs tests/backup-reminder.test.mjs tests/icons.test.mjs tests/csv.test.mjs tests/import-validate.test.mjs tests/login-hardening.test.mjs tests/sessions-idb.test.mjs",
+    "test": "npm run build --silent && node tests/smoke-boot.test.mjs && node tests/smoke-login.test.mjs && node tests/behavior.test.mjs login && node tests/behavior.test.mjs app && node tests/storage.test.mjs migrate && node tests/storage.test.mjs failure && node tests/storage.test.mjs usage && node tests/auth.test.mjs && node tests/tokens.test.mjs && node tests/legibility.test.mjs && node tests/a11y-overlays.test.mjs && node --test tests/weekly-goal.test.mjs tests/rest-rules.test.mjs tests/beep.test.mjs tests/progression.test.mjs tests/streak.test.mjs tests/migrations.test.mjs tests/sw.test.mjs tests/version.test.mjs tests/backup-reminder.test.mjs tests/icons.test.mjs tests/csv.test.mjs tests/import-validate.test.mjs tests/login-hardening.test.mjs tests/sessions-idb.test.mjs tests/swipe.test.mjs",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
