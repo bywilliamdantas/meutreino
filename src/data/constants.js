@@ -1,6 +1,10 @@
+import { lucideSvg } from "./icons.js";
+
 export const STORAGE_KEY = "gym-data",
   THEME_KEY = "gym-theme",
-  APP_VERSION = "v8.5",
+  /* Vem do package.json no build (vite.config.js define __APP_VERSION__).
+     Fora do build (testes em Node) cai em "dev". */
+  APP_VERSION = typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "dev",
   /* Sessão: só expira após N dias sem abrir o app (ou ao tocar em Sair). */
   SESSION_IDLE_DAYS = 30,
   SESSION_IDLE_OPTIONS = [7, 14, 30, 60, 90],
@@ -9,6 +13,10 @@ export const STORAGE_KEY = "gym-data",
      na leitura e em arquivos exportados). Histórico/snapshot não mudaram. */
   SCHEMA_VERSION = 4,
   AUTOBACKUP_KEY = "gym-autobackups",
+  /* v8.6: o histórico de sessões mora no IndexedDB; no localStorage ficam só o
+     "núcleo" (tudo menos sessions) e um diário com os dias ainda não confirmados. */
+  CORE_KEY = "gym-data-v2",
+  JOURNAL_KEY = "gym-journal",
   TABS = ["inicio", "treinos", "historico", "progresso", "ajustes"],
   KG_PER_LB = 0.45359237,
   SET_TYPES = ["normal", "warm", "drop", "fail"],
@@ -18,21 +26,21 @@ export const STORAGE_KEY = "gym-data",
   TAB_DEFS = [{
     id: "inicio",
     label: "Início",
-    icon: `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg>`
+    icon: lucideSvg(22, "house")
   }, {
     id: "treinos",
     label: "Treinos",
-    icon: `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 21c-.3 0-.5-.3-.5-.6V7C3 5 4.5 3.5 6.5 3.5S10 5 10 7v3.5c.8-2.7 3-4.5 6-4.5 3.3 0 5.5 2.7 5.5 6 0 1.8-.9 3.1-2.3 3.7-1.7.7-3.2 1.4-4.4 2.8C13.5 20.2 11.5 21 9 21z"/><path d="M13 12.5c1-1.9 3.5-2 4.7-.3"/><path d="M3 8h7"/></svg>`
+    icon: lucideSvg(22, "bicepsFlexed")
   }, {
     id: "historico",
     label: "Histórico",
-    icon: `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>`
+    icon: lucideSvg(22, "calendar")
   }, {
     id: "progresso",
     label: "Progresso",
-    icon: `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5M4 19h16M8 15l3-4 3 3 4-6"/></svg>`
+    icon: lucideSvg(22, "chartLine")
   }, {
     id: "ajustes",
     label: "Ajustes",
-    icon: `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.6 1H21a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.6 1Z"/></svg>`
+    icon: lucideSvg(22, "settings")
   }];

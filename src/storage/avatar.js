@@ -42,7 +42,7 @@ export async function adoptInlineAvatar(data = store.data) {
   if (!inline) return;
   try {
     await writeAvatar(inline);
-    if (await readAvatar() === inline) data.settings.avatarUrl = null;
+    if ((await readAvatar()) === inline) data.settings.avatarUrl = null;
   } catch (e) {}
   store.avatarUrl = inline;
 }

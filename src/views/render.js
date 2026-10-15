@@ -1,10 +1,11 @@
+import { backupOffer, BACKUP_EVERY_OPTIONS, normalizeBackupEvery, workoutsSinceBackup } from "../backup/backup-reminder.js";
 import { storageStatusText } from "../backup/storage-status.js";
 import { REST_COLOR } from "../config.js";
 import { APP_VERSION, MONTH_NAMES_FULL, WEEKDAY_FULL } from "../data/constants.js";
 import { ICONS } from "../data/icons.js";
 import { attachHandlers } from "../event-handlers.js";
 import { exThumbHtml } from "../exercises/exercise-visuals.js";
-import { daysSince, exerciseHistory } from "../exercises/exercises.js";
+import { daysSince, exerciseHistory, groupOptionsHtml, isCustomExerciseName } from "../exercises/exercises.js";
 import { heroMuscleSvg } from "../icons-svg.js";
 import { store } from "../store.js";
 import { getThemePref } from "../theme.js";
@@ -13,7 +14,17 @@ import { escapeAttr, escapeHtml } from "../utils/dom.js";
 import { dateKeyFromDate, fmtDuration, fmtDurationShort, todayKey } from "../utils/format.js";
 import { isCardio } from "../utils/numbers.js";
 import { renderHeroClock, runCountUp, startHeroClockTicker, syncWakeLock } from "../workouts/active-session.js";
-import { autoWeeklyGoal, computeWeeklyStreak, currentWeeklyGoal, isRestLetter, sessionsFor, sessionsThisMonth, sessionsThisWeek, totalDays, totalDurationForDay } from "../workouts/sessions.js";
+import {
+  autoWeeklyGoal,
+  computeWeeklyStreak,
+  currentWeeklyGoal,
+  isRestLetter,
+  sessionsFor,
+  sessionsThisMonth,
+  sessionsThisWeek,
+  totalDays,
+  totalDurationForDay
+} from "../workouts/sessions.js";
 import { categoryForWorkout, estimateWorkoutMs, nextWorkoutLetter, workoutLabel } from "../workouts/workouts.js";
 import { renderBodyCard } from "./body-view.js";
 import { buildMonthCalendar } from "./calendar.js";
@@ -62,42 +73,73 @@ export function render() {
   if (store.updateAvailable) {
     banners += `<div class="banner info"><span>Nova versão do app disponível.</span><button id="updateBtn">atualizar</button></div>`;
   }
-  const backupDays = daysSince(store.data.settings.lastBackupAt);
-  const backupDue = totalDays() > 0 && backupDays >= 14;
-  if (backupDue) {
-    const daysTxt = backupDays === Infinity ? "Você ainda não exportou um backup" : `Já fazem ${Math.floor(backupDays)} dias sem backup`;
-    banners += `<div class="banner info"><span>${daysTxt}.</span><button id="backupNowBtn">exportar</button></div>`;
+  const bkSettings = store.data.settings;
+  const bkOffer = backupOffer({
+    every: bkSettings.backupEvery,
+    lastBackupAt: bkSettings.lastBackupAt,
+    snoozedUntil: bkSettings.backupSnoozedUntil,
+    workoutsSince: workoutsSinceBackup(store.data.sessions, store.data.workouts, bkSettings.lastBackupAt),
+    hasData: totalDays() > 0
+  });
+  if (bkOffer.offer) {
+    const w = bkOffer.workouts;
+    const reasonTxt =
+      bkOffer.reason === "never"
+        ? "Você ainda não exportou um backup"
+        : bkOffer.reason === "days"
+          ? `Já fazem ${Math.floor(bkOffer.days)} dias sem backup`
+          : `${w} treino${w === 1 ? "" : "s"} desde o último backup`;
+    banners += `<div class="banner info"><span>Fazer backup agora? ${reasonTxt}.</span><span class="banner-actions"><button id="backupNowBtn">exportar</button><button id="backupSnoozeBtn" class="muted">agora não</button></span></div>`;
   }
   const bannersHtml = banners ? `<div class="banners">${banners}</div>` : "";
   const todayDuration = totalDurationForDay(todayKey());
   const todayIsRest = todayCount > 0 && isRestLetter(todayArr[todayArr.length - 1].letter);
   let eyebrowText = "Próximo treino";
-  if (isRunning) eyebrowText = "Treinando agora";else if (isPaused) eyebrowText = "Pausado";else if (todayIsRest) eyebrowText = "Descanso";else if (todayCount === 1) eyebrowText = "Treino de hoje";else if (todayCount > 1) eyebrowText = todayCount + " treinos hoje";
-  const heroSub = todayCount > 0 ? todayDuration ? `concluído em ${fmtDuration(todayDuration)}` : "concluído hoje" : store.data.workouts[heroKey]?.isRest ? "dia de recuperação" : hasActive ? "toque em Detalhes para registrar" : "pronto para começar?";
+  if (isRunning) eyebrowText = "Treinando agora";
+  else if (isPaused) eyebrowText = "Pausado";
+  else if (todayIsRest) eyebrowText = "Descanso";
+  else if (todayCount === 1) eyebrowText = "Treino de hoje";
+  else if (todayCount > 1) eyebrowText = todayCount + " treinos hoje";
+  const heroSub =
+    todayCount > 0
+      ? todayDuration
+        ? `concluído em ${fmtDuration(todayDuration)}`
+        : "concluído hoje"
+      : store.data.workouts[heroKey]?.isRest
+        ? "dia de recuperação"
+        : hasActive
+          ? "toque em Detalhes para registrar"
+          : heroW.exercises && heroW.exercises.length
+            ? "pronto para começar?"
+            : "adicione exercícios para começar";
+  const heroEmpty = !hasActive && todayCount === 0 && !heroW.isRest && !(heroW.exercises && heroW.exercises.length);
   let heroActionsHtml;
   if (!hasActive) {
     heroActionsHtml = `<div class="hero-v2-actions">
       <button type="button" class="hero-v2-btn primary" id="startBtn">${ICONS.playSm} Iniciar</button>
       <button type="button" class="hero-v2-btn ghost" id="statusBtn">${ICONS.calendarSmall} Detalhes</button>
-    </div>`;
+    </div>${heroEmpty ? `<button type="button" class="hero-empty-cta" id="buildWorkoutBtn">${ICONS.plus} Montar este treino</button>` : ""}`;
   } else if (isRunning) {
     heroActionsHtml = `<div class="hero-v2-actions">
-      <button type="button" class="hero-v2-btn primary" id="stopBtn">${ICONS.pause} Pausar</button>
-      <button type="button" class="hero-v2-btn ghost" id="endBtn">Finalizar</button>
+      <button type="button" class="hero-v2-btn primary" id="stopBtn">${ICONS.pauseSm} Pausar</button>
+      <button type="button" class="hero-v2-btn ghost" id="endBtn">${ICONS.check} Finalizar</button>
     </div>
     <button type="button" class="hero-v2-link" id="statusBtn">Ver detalhes do treino</button>`;
   } else {
     heroActionsHtml = `<div class="hero-v2-actions">
       <button type="button" class="hero-v2-btn primary" id="startBtn">${ICONS.playSm} Retomar</button>
-      <button type="button" class="hero-v2-btn ghost" id="endBtn">Finalizar</button>
+      <button type="button" class="hero-v2-btn ghost" id="endBtn">${ICONS.check} Finalizar</button>
     </div>
     <button type="button" class="hero-v2-link" id="statusBtn">Ver detalhes do treino</button>`;
   }
-  const heroSecondaryRowHtml = !hasActive && todayCount > 0 ? `<div class="hero-v2-secondary-row">
+  const heroSecondaryRowHtml =
+    !hasActive && todayCount > 0
+      ? `<div class="hero-v2-secondary-row">
          <button type="button" class="hero-v2-chip" id="editTodayBtn">${ICONS.pencil} Editar</button>
          <button type="button" class="hero-v2-chip undo" id="undoTodayBtn">${ICONS.trash} Desfazer</button>
          <button type="button" class="hero-v2-chip" id="addSecondBtn">${ICONS.plus} Novo</button>
-       </div>` : "";
+       </div>`
+      : "";
   const heroHtml = `<div class="card hero-card-v2" id="heroCard">
     <div class="hero-muscle">${heroMuscleSvg()}</div>
     <div class="hero-v2-top">
@@ -115,7 +157,7 @@ export function render() {
     ${heroSecondaryRowHtml}
   </div>`;
   const statsRowHtml = `<div class="stats-row-v3">
-    <div class="stat-card-v3 streak">
+    <div class="stat-card-v3 streak${streak === 0 ? " zero" : ""}">
       <span class="stat-mini">${ICONS.flame}</span>
       <span class="stat-num" data-count="${streak}">0</span>
       <span class="stat-label">${streak === 1 ? "semana seguida" : "semanas seguidas"}</span>
@@ -146,7 +188,7 @@ export function render() {
     </div>
   </div>`;
   const weekDayShort = ["D", "S", "T", "Q", "Q", "S", "S"];
-  const wOffset = store.data.settings.weekStartsMonday ? now.getDay() === 0 ? 6 : now.getDay() - 1 : now.getDay();
+  const wOffset = store.data.settings.weekStartsMonday ? (now.getDay() === 0 ? 6 : now.getDay() - 1) : now.getDay();
   const weekStart = new Date(now);
   weekStart.setDate(now.getDate() - wOffset);
   weekStart.setHours(0, 0, 0, 0);
@@ -158,8 +200,8 @@ export function render() {
     d.setDate(weekStart.getDate() + i);
     const dk = dateKeyFromDate(d);
     const dArr = sessionsFor(dk);
-    const done = dArr.some(s => !isRestLetter(s.letter));
-    const restOnly = !done && dArr.length > 0 && dArr.every(s => isRestLetter(s.letter));
+    const done = dArr.some((s) => !isRestLetter(s.letter));
+    const restOnly = !done && dArr.length > 0 && dArr.every((s) => isRestLetter(s.letter));
     const isToday = dk === todayKey();
     const idx = store.data.settings.weekStartsMonday ? (i + 1) % 7 : i;
     weekDotsHtml += `<div class="week-dot-col">
@@ -175,58 +217,85 @@ export function render() {
     const w = store.data.workouts[key];
     if (!w) return "";
     const color = colorFor(key, store.data.order);
-    return `<div class="card workout-card" data-letter="${key}">
+    return `<div class="card workout-card" data-letter="${escapeAttr(key)}">
       <div class="workout-head">
         <div class="workout-chip" style="${toneVars(color)}">${w.isRest ? ICONS.moonSmall : key}</div>
-        <input class="workout-title-input" data-role="wname" data-letter="${key}" value="${escapeAttr(w.name)}" placeholder="${w.isRest ? "Nome do descanso" : "Nome do treino"}" aria-label="Nome de ${w.isRest ? "descanso" : "treino " + key}">
+        <input class="workout-title-input" data-role="wname" data-letter="${escapeAttr(key)}" value="${escapeAttr(w.name)}" placeholder="${w.isRest ? "Nome do descanso" : "Nome do treino"}" aria-label="Nome de ${w.isRest ? "descanso" : "treino " + escapeAttr(key)}">
         <span class="edit-pencil">${ICONS.pencil}</span>
-        ${w.isRest ? "" : `<button class="icon-btn" data-role="dupworkout" data-letter="${key}" aria-label="duplicar treino ${key}">${ICONS.copy}</button>`}
-        ${store.data.order.length > 1 ? `<button class="icon-btn" data-role="delworkout" data-letter="${key}" aria-label="remover ${w.isRest ? "descanso" : "treino " + key}">${ICONS.close}</button>` : ""}
+        ${w.isRest ? "" : `<button class="icon-btn" data-role="dupworkout" data-letter="${escapeAttr(key)}" aria-label="duplicar treino ${escapeAttr(key)}">${ICONS.copy}</button>`}
+        ${store.data.order.length > 1 ? `<button class="icon-btn" data-role="delworkout" data-letter="${escapeAttr(key)}" aria-label="remover ${w.isRest ? "descanso" : "treino " + escapeAttr(key)}">${ICONS.close}</button>` : ""}
       </div>
-      ${w.isRest ? `<div class="rest-note">Dia de descanso — sem exercícios para registrar.</div>` : `
-      ${w.exercises.length > 0 ? w.exercises.map((ex, exIdx) => {
-      const cardio = isCardio(ex);
-      const hasHist = exerciseHistory(ex.id).length > 0;
-      return `
-        <div class="exercise-row${isLinkedNext(w, exIdx) || exIdx > 0 && isLinkedNext(w, exIdx - 1) ? " linked" : ""}" data-exid="${ex.id}">
+      ${
+        w.isRest
+          ? `<div class="rest-note">Dia de descanso — sem exercícios para registrar.</div>`
+          : `
+      ${
+        w.exercises.length > 0
+          ? w.exercises
+              .map((ex, exIdx) => {
+                const cardio = isCardio(ex);
+                const hasHist = exerciseHistory(ex.id).length > 0;
+                return `
+        <div class="exercise-row${isLinkedNext(w, exIdx) || (exIdx > 0 && isLinkedNext(w, exIdx - 1)) ? " linked" : ""}" data-exid="${escapeAttr(ex.id)}">
           <div class="ex-row-top">
-            <button type="button" class="ex-name-input ex-name-btn" data-role="openexname" data-letter="${key}" data-exid="${ex.id}" aria-label="Escolher nome do exercício">
+            <button type="button" class="ex-name-input ex-name-btn" data-role="openexname" data-letter="${escapeAttr(key)}" data-exid="${escapeAttr(ex.id)}" aria-label="Escolher nome do exercício">
               ${exThumbHtml(ex, "sm")}
               <span class="ex-name-text ${ex.name ? "" : "placeholder"}">${ex.name ? escapeHtml(ex.name) : cardio ? "Escolher exercício (Esteira, Bike...)" : "Escolher exercício"}</span>
               ${ICONS.pencil}
             </button>
-            <button class="progress-btn" data-role="viewprogress" data-exid="${ex.id}" data-name="${escapeAttr(ex.name || "Exercício")}" ${hasHist ? "" : "disabled"} aria-label="Ver progresso">${ICONS.chart}</button>
-            <button class="ex-del" data-role="delex" data-letter="${key}" data-exid="${ex.id}" aria-label="remover exercício">${ICONS.close}</button>
+            <button class="progress-btn" data-role="viewprogress" data-exid="${escapeAttr(ex.id)}" data-name="${escapeAttr(ex.name || "Exercício")}" ${hasHist ? "" : "disabled"} aria-label="Ver progresso">${ICONS.chart}</button>
+            <button class="ex-del" data-role="delex" data-letter="${escapeAttr(key)}" data-exid="${escapeAttr(ex.id)}" aria-label="remover exercício">${ICONS.close}</button>
           </div>
+          <details class="ex-more" data-exid="${escapeAttr(ex.id)}"${store.exMoreOpen && store.exMoreOpen.has(ex.id) ? " open" : ""}>
+          <summary class="ex-more-summary"><span>Mais opções</span><span class="ex-more-tags">${cardio ? "Cardio" : "Força"}${ex.ss ? " · Superset" : ""}${ex.link ? " · Link" : ""}</span></summary>
           <div class="ex-type-toggle">
-            <button class="ex-type-btn ${cardio ? "" : "active"}" data-role="extype" data-letter="${key}" data-exid="${ex.id}" data-type="strength">${ICONS.dumbbell} Força</button>
-            <button class="ex-type-btn ${cardio ? "active" : ""}" data-role="extype" data-letter="${key}" data-exid="${ex.id}" data-type="cardio">${ICONS.cardio} Cardio</button>
+            <button class="ex-type-btn ${cardio ? "" : "active"}" data-role="extype" data-letter="${escapeAttr(key)}" data-exid="${escapeAttr(ex.id)}" data-type="strength">${ICONS.dumbbell} Força</button>
+            <button class="ex-type-btn ${cardio ? "active" : ""}" data-role="extype" data-letter="${escapeAttr(key)}" data-exid="${escapeAttr(ex.id)}" data-type="cardio">${ICONS.cardio} Cardio</button>
           </div>
+          ${
+            !cardio && isCustomExerciseName(ex.name)
+              ? `<label class="ex-picker-group-select">
+            <span>Grupo muscular</span>
+            <select data-role="exgroup" data-letter="${escapeAttr(key)}" data-exid="${escapeAttr(ex.id)}" aria-label="Grupo muscular de ${escapeAttr(ex.name)}">
+              ${groupOptionsHtml(ex.group)}
+            </select>
+          </label>`
+              : ""
+          }
           <div class="ex-tools">
-            <button class="tool-btn icon" data-role="exmove" data-dir="-1" data-letter="${key}" data-exid="${ex.id}" ${exIdx === 0 ? "disabled" : ""} aria-label="mover exercício para cima">${ICONS.up}</button>
-            <button class="tool-btn icon" data-role="exmove" data-dir="1" data-letter="${key}" data-exid="${ex.id}" ${exIdx === w.exercises.length - 1 ? "disabled" : ""} aria-label="mover exercício para baixo">${ICONS.down}</button>
-            ${exIdx < w.exercises.length - 1 ? `<button class="tool-btn ${ex.ss ? "active" : ""}" data-role="exss" data-letter="${key}" data-exid="${ex.id}" aria-pressed="${!!ex.ss}">Superset com o próximo</button>` : ""}
-            <button class="tool-btn ${ex.link ? "active" : ""}" data-role="exlink" data-letter="${key}" data-exid="${ex.id}" aria-label="link de vídeo ou técnica">${ICONS.link} Link</button>
+            <button class="tool-btn icon" data-role="exmove" data-dir="-1" data-letter="${escapeAttr(key)}" data-exid="${escapeAttr(ex.id)}" ${exIdx === 0 ? "disabled" : ""} aria-label="mover exercício para cima">${ICONS.up}</button>
+            <button class="tool-btn icon" data-role="exmove" data-dir="1" data-letter="${escapeAttr(key)}" data-exid="${escapeAttr(ex.id)}" ${exIdx === w.exercises.length - 1 ? "disabled" : ""} aria-label="mover exercício para baixo">${ICONS.down}</button>
+            ${exIdx < w.exercises.length - 1 ? `<button class="tool-btn ${ex.ss ? "active" : ""}" data-role="exss" data-letter="${escapeAttr(key)}" data-exid="${escapeAttr(ex.id)}" aria-pressed="${!!ex.ss}">Superset com o próximo</button>` : ""}
+            <button class="tool-btn ${ex.link ? "active" : ""}" data-role="exlink" data-letter="${escapeAttr(key)}" data-exid="${escapeAttr(ex.id)}" aria-label="link de vídeo ou técnica">${ICONS.link} Link</button>
           </div>
-          ${cardio ? `
+          </details>
+          ${
+            cardio
+              ? `
             <div class="ex-row-bottom">
-              <label class="ex-field"><span>minutos</span><input data-role="exmins" data-letter="${key}" data-exid="${ex.id}" value="${escapeAttr(ex.mins || "")}" placeholder="30" inputmode="numeric" aria-label="Minutos"></label>
+              <label class="ex-field"><span>Minutos</span><input data-role="exmins" data-letter="${escapeAttr(key)}" data-exid="${escapeAttr(ex.id)}" value="${escapeAttr(ex.mins || "")}" placeholder="30" inputmode="numeric" aria-label="Minutos"></label>
             </div>
-          ` : `
+          `
+              : `
             <div class="ex-row-bottom">
-              <label class="ex-field"><span>séries</span><input data-role="exsets" data-letter="${key}" data-exid="${ex.id}" value="${escapeAttr(ex.sets)}" placeholder="4" inputmode="numeric" aria-label="Séries"></label>
-              <label class="ex-field"><span>reps</span><input data-role="exreps" data-letter="${key}" data-exid="${ex.id}" value="${escapeAttr(ex.reps)}" placeholder="12" inputmode="numeric" aria-label="Repetições"></label>
-              <label class="ex-field"><span>descanso (s)</span><input data-role="exrest" data-letter="${key}" data-exid="${ex.id}" value="${escapeAttr(ex.rest || "")}" placeholder="90" inputmode="numeric" aria-label="Descanso em segundos"></label>
+              <label class="ex-field"><span>Séries</span><input data-role="exsets" data-letter="${escapeAttr(key)}" data-exid="${escapeAttr(ex.id)}" value="${escapeAttr(ex.sets)}" placeholder="3" inputmode="numeric" aria-label="Séries"></label>
+              <label class="ex-field"><span>Reps</span><input data-role="exreps" data-letter="${escapeAttr(key)}" data-exid="${escapeAttr(ex.id)}" value="${escapeAttr(ex.reps)}" placeholder="12" inputmode="numeric" aria-label="Repetições"></label>
+              <label class="ex-field"><span>Descanso (s)</span><input data-role="exrest" data-letter="${escapeAttr(key)}" data-exid="${escapeAttr(ex.id)}" value="${escapeAttr(ex.rest || "")}" placeholder="90" inputmode="numeric" aria-label="Descanso em segundos"></label>
             </div>
-          `}
+          `
+          }
         </div>`;
-    }).join("") : `<div class="empty-state">
+              })
+              .join("")
+          : `<div class="empty-state">
           <div class="empty-icon">${ICONS.dumbbell}</div>
           <p class="empty-title">Nenhum exercício ainda</p>
           <p class="empty-sub">Toque em "Adicionar exercício" para começar a montar este treino.</p>
-        </div>`}
-      <button class="add-exercise-btn" data-role="addex" data-letter="${key}">${ICONS.plus} Adicionar exercício</button>
-      `}
+        </div>`
+      }
+      <button class="add-exercise-btn" data-role="addex" data-letter="${escapeAttr(key)}">${ICONS.plus} Adicionar exercício</button>
+      `
+      }
     </div>`;
   }
   let workoutsHtml = "";
@@ -235,36 +304,50 @@ export function render() {
   } else {
     store.treinosView = "list";
     const cats = [];
-    store.data.order.forEach(k => {
+    store.data.order.forEach((k) => {
       const c = categoryForWorkout(store.data.workouts[k]);
       if (!cats.includes(c)) cats.push(c);
     });
     if (!cats.includes(store.treinosFilter)) store.treinosFilter = "all";
-    const filterChipsHtml = cats.length > 1 ? `<div class="wf-chips">
+    const filterChipsHtml =
+      cats.length > 1
+        ? `<div class="wf-chips">
       <button type="button" class="wf-chip ${store.treinosFilter === "all" ? "active" : ""}" data-role="wfilter" data-cat="all">Todos</button>
-      ${cats.map(c => `<button type="button" class="wf-chip ${store.treinosFilter === c ? "active" : ""}" data-role="wfilter" data-cat="${escapeAttr(c)}">${escapeHtml(c)}</button>`).join("")}
-    </div>` : "";
+      ${cats.map((c) => `<button type="button" class="wf-chip ${store.treinosFilter === c ? "active" : ""}" data-role="wfilter" data-cat="${escapeAttr(c)}">${escapeHtml(c)}</button>`).join("")}
+    </div>`
+        : "";
     const lastDoneLetter = todayArr.length ? todayArr[todayArr.length - 1].letter : null;
-    workoutsHtml = filterChipsHtml;
+    const reordering = !!store.treinosReorder && store.data.order.length > 1;
+    workoutsHtml =
+      filterChipsHtml +
+      (store.data.order.length > 1
+        ? `<div class="wl-toolbar"><button type="button" class="wl-toolbar-btn${reordering ? " active" : ""}" id="reorderToggleBtn" aria-pressed="${reordering}">${reordering ? `${ICONS.check} Concluir` : "Reordenar"}</button></div>`
+        : "");
     store.data.order.forEach((key, idx) => {
       const w = store.data.workouts[key];
       const cat = categoryForWorkout(w);
       if (store.treinosFilter !== "all" && cat !== store.treinosFilter) return;
       const color = colorFor(key, store.data.order);
       const estMs = estimateWorkoutMs(w);
-      const metaTxt = w.isRest ? "Dia de descanso" : `${estMs ? fmtDuration(estMs) + " · " : ""}${w.exercises.length} exercício${w.exercises.length === 1 ? "" : "s"}`;
+      const metaTxt = w.isRest
+        ? "Dia de descanso"
+        : `${estMs ? fmtDuration(estMs) + " · " : ""}${w.exercises.length} exercício${w.exercises.length === 1 ? "" : "s"}`;
       const doneToday = key === lastDoneLetter;
-      workoutsHtml += `<div class="workout-list-card" data-role="openworkout" data-letter="${key}" role="button" tabindex="0">
+      workoutsHtml += `<div class="workout-list-card${reordering ? " reordering" : ""}" data-role="openworkout" data-letter="${escapeAttr(key)}" role="button" tabindex="0">
         <span class="wl-icon" style="${toneVars(color, "22")}">${w.isRest ? ICONS.moonSmall : ICONS.dumbbell}</span>
         <span class="wl-info">
           <span class="wl-name">${escapeHtml(w.name)}</span>
           <span class="wl-meta">${metaTxt}</span>
         </span>
-        ${store.data.order.length > 1 ? `<span class="wl-reorder">
-          <button type="button" class="reorder-btn" data-role="moveup" data-letter="${key}" ${idx === 0 ? "disabled" : ""} aria-label="mover para cima">${ICONS.up}</button>
-          <button type="button" class="reorder-btn" data-role="movedown" data-letter="${key}" ${idx === store.data.order.length - 1 ? "disabled" : ""} aria-label="mover para baixo">${ICONS.down}</button>
-        </span>` : ""}
-        ${doneToday ? `<span class="wl-check">${ICONS.checkSm}</span>` : `<span class="wl-arrow">${ICONS.right}</span>`}
+        ${
+          reordering
+            ? `<span class="wl-reorder">
+          <button type="button" class="reorder-btn" data-role="moveup" data-letter="${escapeAttr(key)}" ${idx === 0 ? "disabled" : ""} aria-label="mover para cima">${ICONS.up}</button>
+          <button type="button" class="reorder-btn" data-role="movedown" data-letter="${escapeAttr(key)}" ${idx === store.data.order.length - 1 ? "disabled" : ""} aria-label="mover para baixo">${ICONS.down}</button>
+        </span>`
+            : ""
+        }
+        ${reordering ? "" : doneToday ? `<span class="wl-check">${ICONS.checkSm}</span>` : `<span class="wl-arrow">${ICONS.right}</span>`}
       </div>`;
     });
     workoutsHtml += `<div class="row-2">
@@ -274,20 +357,23 @@ export function render() {
   }
 
   /* -------- histórico -------- */
-  const legendWorkouts = store.data.order.filter(k => !store.data.workouts[k]?.isRest);
-  const hasRest = store.data.order.some(k => store.data.workouts[k]?.isRest);
+  const legendWorkouts = store.data.order.filter((k) => !store.data.workouts[k]?.isRest);
+  const hasRest = store.data.order.some((k) => store.data.workouts[k]?.isRest);
   let historyHtml = `<div class="card">
     <div class="legend">
-      ${legendWorkouts.map(l => `<div class="legend-item"><span class="legend-dot" style="${toneVars(colorFor(l, store.data.order))}"></span>${l}</div>`).join("")}
+      ${legendWorkouts.map((l) => `<div class="legend-item"><span class="legend-dot" style="${toneVars(colorFor(l, store.data.order))}"></span>${l}</div>`).join("")}
       ${hasRest ? `<div class="legend-item"><span class="legend-dot" style="${toneVars(REST_COLOR)}"></span>descanso</div>` : ""}
-      <div class="legend-item"><span class="legend-dot off"></span>não treinou</div>
+
     </div>
     ${buildMonthCalendar(store.historyMonth)}
   </div>`;
-  const monthKeys = Object.keys(store.data.sessions).filter(k => {
-    const [ky, km] = k.split("-").map(Number);
-    return ky === store.historyMonth.getFullYear() && km === store.historyMonth.getMonth() + 1;
-  }).sort().reverse();
+  const monthKeys = Object.keys(store.data.sessions)
+    .filter((k) => {
+      const [ky, km] = k.split("-").map(Number);
+      return ky === store.historyMonth.getFullYear() && km === store.historyMonth.getMonth() + 1;
+    })
+    .sort()
+    .reverse();
   historyHtml += `<p class="section-title spaced-title">Sessões do mês</p>`;
   if (!monthKeys.length) {
     historyHtml += `<div class="empty-state">
@@ -302,28 +388,34 @@ export function render() {
     const shownKeys = expanded ? monthKeys : monthKeys.slice(0, MONTH_PREVIEW);
     let monthTrainings = 0;
     let monthMs = 0;
-    monthKeys.forEach(dk => {
-      monthTrainings += sessionsFor(dk).filter(s => !isRestLetter(s.letter)).length;
+    monthKeys.forEach((dk) => {
+      monthTrainings += sessionsFor(dk).filter((s) => !isRestLetter(s.letter)).length;
       monthMs += totalDurationForDay(dk) || 0;
     });
     const summaryBits = [`${monthKeys.length} dia${monthKeys.length === 1 ? "" : "s"}`, `${monthTrainings} treino${monthTrainings === 1 ? "" : "s"}`];
     if (monthMs) summaryBits.push(fmtDurationShort(monthMs));
     historyHtml += `<div class="month-sessions-summary">${summaryBits.join(" · ")}</div>
-    <div class="card month-sessions-card compact">${shownKeys.map(dk => {
-      const arr = sessionsFor(dk);
-      const [, m, d] = dk.split("-").map(Number);
-      const dur = totalDurationForDay(dk);
-      return `<button type="button" class="month-session-row" data-role="openhistoryday" data-datekey="${dk}">
+    <div class="card month-sessions-card compact">${shownKeys
+      .map((dk) => {
+        const arr = sessionsFor(dk);
+        const [, m, d] = dk.split("-").map(Number);
+        const dur = totalDurationForDay(dk);
+        return `<button type="button" class="month-session-row" data-role="openhistoryday" data-datekey="${escapeAttr(dk)}">
         <span class="ms-date">${d}/${m}</span>
-        <span class="ms-letters">${arr.map(s => {
-        const isRest = isRestLetter(s.letter);
-        const bg = s.letter && store.data.workouts[s.letter] && !isRest ? colorFor(s.letter, store.data.order) : REST_COLOR;
-        return `<span class="ms-chip" style="${toneVars(bg)}">${isRest ? ICONS.moonSmall : s.letter || "?"}</span>`;
-      }).join("")}</span>
+        <span class="ms-letters">${arr
+          .map((s) => {
+            const isRest = isRestLetter(s.letter);
+            const bg = s.letter && store.data.workouts[s.letter] && !isRest ? colorFor(s.letter, store.data.order) : REST_COLOR;
+            return `<span class="ms-chip" style="${toneVars(bg)}">${isRest ? ICONS.moonSmall : s.letter || "?"}</span>`;
+          })
+          .join("")}</span>
         ${dur ? `<span class="ms-duration">${fmtDurationShort(dur)}</span>` : ""}
         <span class="ms-arrow">${ICONS.right}</span>
       </button>`;
-    }).join("")}${canCollapse ? `<button type="button" class="month-sessions-toggle" id="monthSessionsToggle">${expanded ? "Mostrar menos" : `Ver todas (${monthKeys.length} dias)`}</button>` : ""}</div>`;
+      })
+      .join(
+        ""
+      )}${canCollapse ? `<button type="button" class="month-sessions-toggle" id="monthSessionsToggle">${expanded ? "Mostrar menos" : `Ver todas (${monthKeys.length} dias)`}</button>` : ""}</div>`;
   }
   const progressHtml = renderStatsCard() + renderRecordsCard() + renderBodyCard();
 
@@ -343,19 +435,26 @@ export function render() {
       ${ICONS.right}
     </button>
     <div class="card conta-extra">
-      ${pinSupported() ? `<button type="button" class="settings-row" id="pinRowBtn">
+      ${
+        pinSupported()
+          ? `<button type="button" class="settings-row" id="pinRowBtn">
         <span class="sr-icon">${ICONS.lock}</span>
         <span class="sr-info">
           <span class="sr-title">PIN de acesso</span>
           <span class="sr-sub">${hasPin(store.currentUser.username) ? "Ativo — entre com 4 dígitos neste aparelho" : "Troque a senha por 4 dígitos neste aparelho"}</span>
         </span>
         <span class="sr-chevron">${ICONS.right}</span>
-      </button>` : ""}
+      </button>`
+          : ""
+      }
       <div class="idle-row">
         <label class="reminder-row">
           <span>Manter conectado por</span>
           <select class="idle-select" id="idleDaysSelect" aria-label="Dias sem abrir o app até pedir login">
-            ${[...new Set([...SESSION_IDLE_OPTIONS, readIdleDays(store.currentUser.username)])].sort((a, b) => a - b).map(d => `<option value="${d}" ${d === readIdleDays(store.currentUser.username) ? "selected" : ""}>${d} dias</option>`).join("")}
+            ${[...new Set([...SESSION_IDLE_OPTIONS, readIdleDays(store.currentUser.username)])]
+              .sort((a, b) => a - b)
+              .map((d) => `<option value="${d}" ${d === readIdleDays(store.currentUser.username) ? "selected" : ""}>${d} dias</option>`)
+              .join("")}
           </select>
         </label>
         <div class="idle-hint">Você só precisa entrar de novo se ficar esse tempo sem abrir o app, ou ao tocar em Sair. Não pede login na virada do dia nem no meio de um treino.</div>
@@ -375,6 +474,7 @@ export function render() {
         <span>Horário</span>
         <input type="time" id="reminderTime" value="${r.time}" aria-label="Horário do lembrete">
       </div>
+      <div class="idle-hint" id="reminderHint">O lembrete só aparece com o app aberto: ele não toca com o app fechado.</div>
       <div class="reminder-row mt-14">
         <span>Duração do descanso padrão</span>
         <div class="step-group compact">
@@ -409,6 +509,7 @@ export function render() {
           <span class="slider"></span>
         </span>
       </label>
+      <div class="idle-hint" id="restEndHint">O aviso de fim de descanso só aparece com o app aberto.</div>
       <div class="reminder-row mt-14">
         <span>Manter a tela ligada no treino</span>
         <span class="switch">
@@ -481,6 +582,20 @@ export function render() {
     </div>
 
     ${storageUsageHtml()}
+
+    <p class="settings-section">Lembrete de backup</p>
+    <div class="card conta-extra">
+      <div class="idle-row">
+        <label class="reminder-row">
+          <span>Sugerir backup</span>
+          <select class="idle-select" id="backupEverySelect" aria-label="Frequência do lembrete de backup">
+            ${BACKUP_EVERY_OPTIONS.map((n) => `<option value="${n}" ${n === normalizeBackupEvery(store.data.settings.backupEvery) ? "selected" : ""}>a cada ${n} treinos</option>`).join("")}
+            <option value="0" ${normalizeBackupEvery(store.data.settings.backupEvery) === 0 ? "selected" : ""}>desligado</option>
+          </select>
+        </label>
+        <div class="idle-hint">Ao finalizar um treino, o app sugere exportar um backup quando passar esse número de treinos ou de dias desde o último. Você pode adiar com “agora não”.</div>
+      </div>
+    </div>
 
     <p class="settings-section">Gerenciar dados</p>
     <div class="card list">
@@ -566,7 +681,12 @@ export function render() {
     content = perfilHtml;
   } else if (store.dadosBackupOpen) {
     content = dadosBackupHtml;
-  } else if (store.activeTab === "treinos") content = store.treinosView === "edit" ? workoutsHtml : `<h1 class="tab-title">${TAB_TITLES.treinos}</h1>${workoutsHtml}`;else if (store.activeTab === "historico") content = `<h1 class="tab-title">${TAB_TITLES.historico}</h1>${historyHtml}`;else if (store.activeTab === "progresso") content = `<h1 class="tab-title">${TAB_TITLES.progresso}</h1>${progressHtml}`;else if (store.activeTab === "ajustes") content = `<h1 class="tab-title">${TAB_TITLES.ajustes}</h1>${ajustesHtml}`;else {
+  } else if (store.activeTab === "treinos")
+    content = store.treinosView === "edit" ? workoutsHtml : `<h1 class="tab-title">${TAB_TITLES.treinos}</h1>${workoutsHtml}`;
+  else if (store.activeTab === "historico") content = `<h1 class="tab-title">${TAB_TITLES.historico}</h1>${historyHtml}`;
+  else if (store.activeTab === "progresso") content = `<h1 class="tab-title">${TAB_TITLES.progresso}</h1>${progressHtml}`;
+  else if (store.activeTab === "ajustes") content = `<h1 class="tab-title">${TAB_TITLES.ajustes}</h1>${ajustesHtml}`;
+  else {
     store.activeTab = "inicio";
     content = homeHtml;
   }

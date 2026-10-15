@@ -11,131 +11,181 @@
      src/theme.js (THEME_COLOR) e em index.html.
    ============================================================ */
 
-:root{
+:root {
   /* ---------- espaçamento ---------- */
-  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px;
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 32px;
+  --s7: 48px;
+  --tap: 44px; /* alvo de toque mínimo (iOS HIG / WCAG 2.5.5): botões só com ícone */
 
   /* ---------- raios ---------- */
-  --r-sm:12px; --r-md:16px; --r-lg:20px; --r-xl:24px; --r-2xl:28px;
-  --r-card:22px;   /* faixa de estatísticas */
-  --r-ctl:14px;    /* botões e campos de toque */
-  --r-hero:28px;   /* card escuro da Home */
-  --r-float:26px;  /* tab bar e timer de descanso flutuantes */
-  --r-sheet:32px;  /* topo das folhas (sheets) */
+  --r-sm: 12px;
+  --r-md: 16px;
+  --r-lg: 20px;
+  --r-xl: 24px;
+  --r-2xl: 28px;
+  --r-card: 22px; /* faixa de estatísticas */
+  --r-ctl: 14px; /* botões e campos de toque */
+  --r-hero: 28px; /* card escuro da Home */
+  --r-float: 26px; /* tab bar e timer de descanso flutuantes */
+  --r-sheet: 32px; /* topo das folhas (sheets) */
 
   /* ---------- tipografia ---------- */
-  --font-display:ui-rounded,"SF Pro Rounded",-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
-  --font-score:"Treino Score", ui-rounded, system-ui, sans-serif;
+  --font-display: ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif;
+  --font-score: "Treino Score", ui-rounded, system-ui, sans-serif;
 
   /* ---------- superfícies e texto ---------- */
-  --bg:#f3f2ef;
-  --surface:#ffffff;
-  --surface-2:#ffffff;
-  --surface-3:#ecebe7;
-  --card-border:rgba(20,18,26,0.09);
-  --divider:rgba(20,18,26,0.08);
+  --bg: #f3f2ef;
+  --surface: #ffffff;
+  --surface-2: #ffffff;
+  --surface-3: #ecebe7;
+  --card-border: rgba(20, 18, 26, 0.09);
+  --divider: rgba(20, 18, 26, 0.08);
 
-  --text-primary:#14121a;
-  --text-secondary:#4f4859;
-  --text-muted:#6d6677;
-  --text-label:#4f4859;
+  --text-primary: #14121a;
+  --text-secondary: #4f4859;
+  --text-muted: #6d6677;
+  --text-label: #4f4859;
 
-  --dot-off:#e9e5f0;
-  --dot-future:#dcd6e6;
+  --dot-off: #e9e5f0;
+  --dot-future: #dcd6e6;
 
   /* ---------- "tinta": o elemento escuro e dominante de cada tela ---------- */
-  --ink:#17141c;
-  --ink-2:#231f2b;
-  --on-ink-fill:rgba(255,255,255,0.10);     /* botões/chips sobre a tinta */
-  --on-ink-fill-strong:rgba(255,255,255,0.12);
-  --on-ink-line:rgba(255,255,255,0.16);     /* trilho do anel do timer */
-  --on-ink-text:rgba(255,255,255,0.68);     /* texto secundário sobre a tinta */
-  --on-ink-text-soft:rgba(255,255,255,0.62);
-  --hero-badge-bg:rgba(255,255,255,0.10);   /* etiqueta do hero ("Próximo treino") */
-  --tabbar-bg:rgba(255,255,255,0.9);
+  --ink: #17141c;
+  --ink-2: #231f2b;
+  --on-ink-fill: rgba(255, 255, 255, 0.1); /* botões/chips sobre a tinta */
+  --on-ink-fill-strong: rgba(255, 255, 255, 0.12);
+  --on-ink-line: rgba(255, 255, 255, 0.16); /* trilho do anel do timer */
+  --on-ink-text: rgba(255, 255, 255, 0.68); /* texto secundário sobre a tinta */
+  --on-ink-text-soft: rgba(255, 255, 255, 0.62);
+  --hero-badge-bg: rgba(255, 255, 255, 0.1); /* etiqueta do hero ("Próximo treino") */
+  --tabbar-bg: rgba(255, 255, 255, 0.9);
+  --tab-active-bg: #17141c; /* pílula da aba ativa */
+  --tab-active-fg: #ffffff;
 
   /* ---------- estados ---------- */
-  --danger:#f0334f;
-  --danger-bg:rgba(240,51,79,0.10);
-  --danger-border:rgba(240,51,79,0.28);
+  --danger: #f0334f;
+  --danger-bg: rgba(240, 51, 79, 0.1);
+  --danger-border: rgba(240, 51, 79, 0.28);
+  --danger-text: #c10e29; /* texto vermelho: 4,6:1 sobre bg/surface/--danger-bg (o --danger puro dá 3,5:1) */
+  --danger-on-ink: #ff8a9b; /* texto vermelho sobre a tinta (botão "desfazer" do hero) */
+  --danger-on-ink-soft: #ffb3ab; /* aviso de erro do login (sempre sobre a tinta) */
 
-  --ok:#22c55e;
-  --ok-bg:rgba(34,197,94,0.12);
-  --ok-border:rgba(34,197,94,0.32);
+  --ok: #22c55e;
+  --ok-bg: rgba(34, 197, 94, 0.12);
+  --ok-border: rgba(34, 197, 94, 0.32);
 
-  --info:#2f8fff;
-  --info-bg:rgba(47,143,255,0.10);
-  --info-border:rgba(47,143,255,0.28);
+  --info: #2f8fff;
+  --info-bg: rgba(47, 143, 255, 0.1);
+  --info-border: rgba(47, 143, 255, 0.28);
 
   /* ---------- marca ---------- */
-  --accent:#ff5a36;
-  --accent-2:#ff8862;
-  --accent-soft:rgba(255,90,54,0.10);
-  --accent-border:rgba(255,90,54,0.24);
-  --accent-on:#ffffff;
+  --accent: #ff5a36;
+  --accent-2: #ff8862;
+  --accent-hi: #ff7048; /* topo do gradiente do botão principal do hero */
+  --accent-deep: #e04a17; /* fundo do cabeçalho do Perfil (fim do gradiente) */
+  --accent-text: #bd2200; /* TEXTO laranja: 4,7:1 sobre bg/surface/--accent-soft (o --accent puro dá 3,1:1) */
+  --accent-soft: rgba(255, 90, 54, 0.1);
+  --accent-border: rgba(255, 90, 54, 0.24);
+  --accent-on: #14121a; /* texto/ícone sobre fundo laranja: 6,0:1 sobre --accent (o branco dava 3,1:1) */
 
-  --violet:#7c5cfc;
-  --violet-soft:rgba(124,92,252,0.12);
-  --violet-border:rgba(124,92,252,0.28);
-  --gold:#ffb020;
+  --white: #ffffff; /* branco fixo: texto sobre a tinta e sobre cores de dado, miolo do switch */
+  --ink-3: #0d0b11; /* fim do gradiente do login */
+  --drop: #9b59b6; /* série "drop set" */
+  --drop-bg: rgba(155, 89, 182, 0.15);
+
+  /* categorias de exercício (miniaturas); o -soft é a mesma cor a 12% */
+  --cat-chest: #ff5a1f;
+  --cat-chest-soft: #ff5a1f1f;
+  --cat-back: #2f7fe0;
+  --cat-back-soft: #2f7fe01f;
+  --cat-legs: #30b857;
+  --cat-legs-soft: #30b8571f;
+  --cat-shoulders: #8b5cf6;
+  --cat-shoulders-soft: #8b5cf61f;
+  --cat-arms: #e0472f;
+  --cat-arms-soft: #e0472f1f;
+  --cat-core: #e0a62f;
+  --cat-core-soft: #e0a62f1f;
+  --cat-cardio: #ff5a1f;
+  --cat-cardio-soft: #ff5a1f1f;
+  --cat-default: #8a8a93;
+  --cat-default-soft: #8a8a931f;
+
+  --violet: #7c5cfc;
+  --violet-soft: rgba(124, 92, 252, 0.12);
+  --violet-border: rgba(124, 92, 252, 0.28);
+  --gold: #ffb020;
 
   /* ---------- sombras ---------- */
-  --shadow-card:0 1px 2px rgba(20,18,26,0.04);
-  --shadow-sheet:0 -20px 60px rgba(0,0,0,0.18);
-  --shadow-accent:0 10px 22px rgba(255,90,54,0.28);
-  --shadow-hero:0 18px 40px rgba(20,18,26,0.22);
-  --shadow-float:0 12px 32px rgba(20,18,26,0.14);   /* tab bar */
-  --shadow-float-ink:0 16px 40px rgba(20,18,26,0.35); /* timer de descanso */
-  --shadow-cta:0 8px 20px rgba(255,90,54,0.35);     /* botão principal do hero */
+  --shadow-card: 0 1px 2px rgba(20, 18, 26, 0.04);
+  --shadow-sheet: 0 -20px 60px rgba(0, 0, 0, 0.18);
+  --shadow-accent: 0 10px 22px rgba(255, 90, 54, 0.28);
+  --shadow-hero: 0 18px 40px rgba(20, 18, 26, 0.22);
+  --shadow-float: 0 12px 32px rgba(20, 18, 26, 0.14); /* tab bar */
+  --shadow-float-ink: 0 16px 40px rgba(20, 18, 26, 0.35); /* timer de descanso */
+  --shadow-cta: 0 8px 20px rgba(255, 90, 54, 0.35); /* botão principal do hero */
 
-  --ease:cubic-bezier(.32,.72,0,1);
+  --ease: cubic-bezier(0.32, 0.72, 0, 1);
   color-scheme: light;
 }
 
 /* ---------- tema escuro: modo "auto" (preferência do sistema) ---------- */
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
-    --bg:#0e0b12;
-    --surface:#151119;
-    --surface-2:#1c1722;
-    --surface-3:#211b28;
-    --card-border:rgba(255,255,255,0.08);
-    --divider:rgba(255,255,255,0.07);
-    --text-primary:#f6f4f9;
-    --text-secondary:#b3abc0;
-    --text-muted:#8a8394;
-    --text-label:#a49dae;
-    --dot-off:#2c2733;
-    --dot-future:#3c3644;
-    --ink:#1d1824;
-    --ink-2:#2a2333;
-    --hero-badge-bg:rgba(255,90,54,0.18);
-    --tabbar-bg:rgba(29,24,36,0.9);
-    --shadow-card:none;
-    --shadow-sheet:0 -20px 60px rgba(0,0,0,0.6);
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e0b12;
+    --surface: #151119;
+    --surface-2: #1c1722;
+    --surface-3: #211b28;
+    --card-border: rgba(255, 255, 255, 0.08);
+    --divider: rgba(255, 255, 255, 0.07);
+    --text-primary: #f6f4f9;
+    --text-secondary: #b3abc0;
+    --text-muted: #8a8394;
+    --text-label: #a49dae;
+    --dot-off: #2c2733;
+    --dot-future: #3c3644;
+    --ink: #1d1824;
+    --ink-2: #2a2333;
+    --hero-badge-bg: rgba(255, 90, 54, 0.18);
+    --tabbar-bg: rgba(29, 24, 36, 0.9);
+    --tab-active-bg: #f6f4f9;
+    --tab-active-fg: #14121a;
+    --accent-text: #ff6443;
+    --danger-text: #f3576e;
+    --shadow-card: none;
+    --shadow-sheet: 0 -20px 60px rgba(0, 0, 0, 0.6);
     color-scheme: dark;
   }
 }
 
 /* ---------- tema escuro: modo forçado (mesmo conteúdo do bloco acima) ---------- */
-:root[data-theme="dark"]{
-  --bg:#0e0b12;
-  --surface:#151119;
-  --surface-2:#1c1722;
-  --surface-3:#211b28;
-  --card-border:rgba(255,255,255,0.08);
-  --divider:rgba(255,255,255,0.07);
-  --text-primary:#f6f4f9;
-  --text-secondary:#b3abc0;
-  --text-muted:#8a8394;
-  --text-label:#a49dae;
-  --dot-off:#2c2733;
-  --dot-future:#3c3644;
-  --ink:#1d1824;
-  --ink-2:#2a2333;
-  --hero-badge-bg:rgba(255,90,54,0.18);
-  --tabbar-bg:rgba(29,24,36,0.9);
-  --shadow-card:none;
-  --shadow-sheet:0 -20px 60px rgba(0,0,0,0.6);
+:root[data-theme="dark"] {
+  --bg: #0e0b12;
+  --surface: #151119;
+  --surface-2: #1c1722;
+  --surface-3: #211b28;
+  --card-border: rgba(255, 255, 255, 0.08);
+  --divider: rgba(255, 255, 255, 0.07);
+  --text-primary: #f6f4f9;
+  --text-secondary: #b3abc0;
+  --text-muted: #8a8394;
+  --text-label: #a49dae;
+  --dot-off: #2c2733;
+  --dot-future: #3c3644;
+  --ink: #1d1824;
+  --ink-2: #2a2333;
+  --hero-badge-bg: rgba(255, 90, 54, 0.18);
+  --tabbar-bg: rgba(29, 24, 36, 0.9);
+  --tab-active-bg: #f6f4f9;
+  --tab-active-fg: #14121a;
+  --accent-text: #ff6443;
+  --danger-text: #f3576e;
+  --shadow-card: none;
+  --shadow-sheet: 0 -20px 60px rgba(0, 0, 0, 0.6);
   color-scheme: dark;
 }

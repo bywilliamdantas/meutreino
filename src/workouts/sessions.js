@@ -11,7 +11,7 @@ export function sessionsFor(dateKey) {
 
 /* Uma sessão "tem registro" quando alguma série foi guardada nela. */
 export function sessionHasData(log) {
-  return Object.values(log || {}).some(sets => Array.isArray(sets) && sets.length > 0);
+  return Object.values(log || {}).some((sets) => Array.isArray(sets) && sets.length > 0);
 }
 
 /* Foto do treino no momento do registro: nomes, tipos e metas das séries.
@@ -19,21 +19,23 @@ export function sessionHasData(log) {
 export function snapshotExercises(letter, onlyIds) {
   const w = store.data.workouts[letter];
   if (!w || w.isRest) return [];
-  return (w.exercises || []).filter(ex => !onlyIds || onlyIds.has(ex.id)).map(ex => {
-    const o = {
-      id: ex.id,
-      name: ex.name || "",
-      type: ex.type || "strength"
-    };
-    if (ex.sets !== undefined) o.sets = ex.sets;
-    if (ex.reps !== undefined) o.reps = ex.reps;
-    if (ex.rest !== undefined) o.rest = ex.rest;
-    if (ex.mins !== undefined) o.mins = ex.mins;
-    if (ex.group) o.group = ex.group;
-    if (ex.ss) o.ss = true;
-    if (ex.link) o.link = ex.link;
-    return o;
-  });
+  return (w.exercises || [])
+    .filter((ex) => !onlyIds || onlyIds.has(ex.id))
+    .map((ex) => {
+      const o = {
+        id: ex.id,
+        name: ex.name || "",
+        type: ex.type || "strength"
+      };
+      if (ex.sets !== undefined) o.sets = ex.sets;
+      if (ex.reps !== undefined) o.reps = ex.reps;
+      if (ex.rest !== undefined) o.rest = ex.rest;
+      if (ex.mins !== undefined) o.mins = ex.mins;
+      if (ex.group) o.group = ex.group;
+      if (ex.ss) o.ss = true;
+      if (ex.link) o.link = ex.link;
+      return o;
+    });
 }
 
 /* Registra a foto do treino na sessão (só quando há séries e ainda não está finalizada ou sem foto). */
@@ -44,7 +46,7 @@ export function stampSnapshot(sess) {
 }
 
 export function snapshotExercise(sess, exId) {
-  return sess && Array.isArray(sess.snapshot) ? sess.snapshot.find(e => e.id === exId) || null : null;
+  return sess && Array.isArray(sess.snapshot) ? sess.snapshot.find((e) => e.id === exId) || null : null;
 }
 
 export function firstSessionFor(dateKey) {
@@ -86,17 +88,18 @@ export function lastNonRestSessionEntry() {
   for (let i = keys.length - 1; i >= 0; i--) {
     const arr = sessionsFor(keys[i]);
     for (let j = arr.length - 1; j >= 0; j--) {
-      if (!isRestLetter(arr[j].letter)) return {
-        date: keys[i],
-        letter: arr[j].letter
-      };
+      if (!isRestLetter(arr[j].letter))
+        return {
+          date: keys[i],
+          letter: arr[j].letter
+        };
     }
   }
   return null;
 }
 
 export function dayHasTraining(dateKey) {
-  return sessionsFor(dateKey).some(s => !isRestLetter(s.letter));
+  return sessionsFor(dateKey).some((s) => !isRestLetter(s.letter));
 }
 
 /* Meta semanal padrão = treinos que não são descanso no ciclo. */
@@ -122,7 +125,7 @@ export function computeWeeklyStreak() {
 
 export function totalSessions() {
   let n = 0;
-  Object.keys(store.data.sessions).forEach(k => n += sessionsFor(k).length);
+  Object.keys(store.data.sessions).forEach((k) => (n += sessionsFor(k).length));
   return n;
 }
 
@@ -137,7 +140,7 @@ export function sessionsThisMonth() {
   let c = 0;
   for (const key of Object.keys(store.data.sessions)) {
     const [ky, km] = key.split("-").map(Number);
-    if (ky === y && km === m) c += sessionsFor(key).filter(s => !isRestLetter(s.letter)).length;
+    if (ky === y && km === m) c += sessionsFor(key).filter((s) => !isRestLetter(s.letter)).length;
   }
   return c;
 }
@@ -161,7 +164,7 @@ export function sessionDurationMs(session) {
 export function totalDurationForDay(dateKey) {
   const arr = sessionsFor(dateKey);
   let total = 0;
-  arr.forEach(s => {
+  arr.forEach((s) => {
     const ms = sessionDurationMs(s);
     if (ms) total += ms;
   });
@@ -172,9 +175,9 @@ export function computeSessionIntensity(w, log) {
   if (!w || w.isRest || !w.exercises || !w.exercises.length) return null;
   let total = 0,
     done = 0;
-  w.exercises.forEach(ex => {
-    const sets = log && log[ex.id] || [];
-    sets.forEach(s => {
+  w.exercises.forEach((ex) => {
+    const sets = (log && log[ex.id]) || [];
+    sets.forEach((s) => {
       if (!isWork(s)) return;
       total++;
       if (isPerformed(s)) done++;

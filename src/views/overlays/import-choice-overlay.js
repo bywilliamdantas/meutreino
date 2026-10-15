@@ -4,16 +4,14 @@ import { store } from "../../store.js";
 import { closeOverlay } from "./overlay-manager.js";
 
 export function renderImportChoiceOverlay(root) {
-  const {
-    parsed
-  } = store.overlay;
+  const { parsed } = store.overlay;
   const nTreinos = (parsed.order || []).length;
   const nSessoes = Object.keys(parsed.sessions || {}).length;
   root.innerHTML = `<div class="sheet-backdrop" id="sheetBackdrop"></div>
-  <div class="sheet" role="dialog" aria-modal="true" aria-label="Importar backup">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
     <div class="sheet-handle"></div>
     <div class="sheet-header">
-      <div class="sheet-date">Importar backup</div>
+      <div class="sheet-date" id="sheetTitle">Importar backup</div>
       <button class="icon-btn" id="sheetClose" aria-label="fechar">${ICONS.close}</button>
     </div>
     <p class="import-note">

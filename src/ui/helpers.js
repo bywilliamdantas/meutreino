@@ -6,9 +6,12 @@ import { escapeAttr, escapeHtml } from "../utils/dom.js";
 
 /* Cor que vem dos dados (letra do treino, categoria do exercício): só o VALOR
    vai inline, como custom property; fundo/texto ficam no CSS (var(--tone),
-   var(--tone-soft)). `softAlpha` é o byte hex de transparência do fundo suave. */
-export function toneVars(color, softAlpha) {
-  return `--tone:${color}` + (softAlpha ? `;--tone-soft:${color}${softAlpha}` : "");
+   var(--tone-soft)). `soft` é o fundo suave: ou o byte hex de transparência anexado ao
+   `color` (ex.: "22", quando `color` é um hex), ou um valor CSS completo (ex.: "var(--cat-back-soft)"). */
+export function toneVars(color, soft) {
+  if (!soft) return `--tone:${color}`;
+  const softValue = /^[0-9a-f]{2}$/i.test(soft) ? `${color}${soft}` : soft;
+  return `--tone:${color};--tone-soft:${softValue}`;
 }
 
 export function colorFor(key, order) {
@@ -18,7 +21,7 @@ export function colorFor(key, order) {
 }
 
 export function userDisplayName() {
-  return store.data.settings.displayName && store.data.settings.displayName.trim() || store.currentUser.name || store.currentUser.username;
+  return (store.data.settings.displayName && store.data.settings.displayName.trim()) || store.currentUser.name || store.currentUser.username;
 }
 
 export function userInitial() {
@@ -26,7 +29,7 @@ export function userInitial() {
   return n ? n[0].toUpperCase() : "?";
 }
 
-export function avatarInnerHtml(size) {
+export function avatarInnerHtml() {
   const url = store.avatarUrl;
   if (url) return `<img src="${escapeAttr(url)}" alt="" class="avatar-img">`;
   return `<span class="avatar-fallback">${escapeHtml(userInitial())}</span>`;

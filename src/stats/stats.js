@@ -8,20 +8,20 @@ import { exercisePRs } from "./prs.js";
 export function weekStartOf(d) {
   const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
   const day = x.getDay();
-  const offset = store.data.settings.weekStartsMonday ? day === 0 ? 6 : day - 1 : day;
+  const offset = store.data.settings.weekStartsMonday ? (day === 0 ? 6 : day - 1) : day;
   x.setDate(x.getDate() - offset);
   return x;
 }
 
 export function forEachLoggedSet(cb) {
-  Object.keys(store.data.sessions).forEach(k => {
-    sessionsFor(k).forEach(sess => {
+  Object.keys(store.data.sessions).forEach((k) => {
+    sessionsFor(k).forEach((sess) => {
       if (store.data.workouts[sess.letter] && store.data.workouts[sess.letter].isRest) return;
-      Object.keys(sess.log || {}).forEach(exId => {
+      Object.keys(sess.log || {}).forEach((exId) => {
         const arr = sess.log[exId];
         if (!Array.isArray(arr)) return;
-        const ex = findExercise(exId) || (Array.isArray(sess.snapshot) ? sess.snapshot.find(e => e.id === exId) : null);
-        arr.forEach(s => cb(s, k, ex, sess));
+        const ex = findExercise(exId) || (Array.isArray(sess.snapshot) ? sess.snapshot.find((e) => e.id === exId) : null);
+        arr.forEach((s) => cb(s, k, ex, sess));
       });
     });
   });
@@ -66,16 +66,19 @@ export function collectStats(days) {
 export function weeklyVolume(n) {
   const first = weekStartOf(new Date());
   first.setDate(first.getDate() - 7 * (n - 1));
-  const buckets = Array.from({
-    length: n
-  }, (_, i) => {
-    const d = new Date(first);
-    d.setDate(d.getDate() + 7 * i);
-    return {
-      start: d,
-      volume: 0
-    };
-  });
+  const buckets = Array.from(
+    {
+      length: n
+    },
+    (_, i) => {
+      const d = new Date(first);
+      d.setDate(d.getDate() + 7 * i);
+      return {
+        start: d,
+        volume: 0
+      };
+    }
+  );
   forEachLoggedSet((s, k, ex) => {
     if (isCardio(ex) || !isWork(s) || !isPerformed(s) || !(s.weight > 0 && s.reps > 0)) return;
     const [y, m, d] = k.split("-").map(Number);
@@ -87,15 +90,15 @@ export function weeklyVolume(n) {
 
 export function collectRecords() {
   const out = [];
-  store.data.order.forEach(key => {
+  store.data.order.forEach((key) => {
     const w = store.data.workouts[key];
     if (!w || w.isRest) return;
     let best = null;
-    (w.exercises || []).forEach(ex => {
+    (w.exercises || []).forEach((ex) => {
       if (isCardio(ex) || !ex.name) return;
       const pr = exercisePRs(ex.id);
       if (!pr) return;
-      if (!best || pr.maxWeightDate > best.pr.maxWeightDate || pr.maxWeightDate === best.pr.maxWeightDate && pr.maxWeight > best.pr.maxWeight) {
+      if (!best || pr.maxWeightDate > best.pr.maxWeightDate || (pr.maxWeightDate === best.pr.maxWeightDate && pr.maxWeight > best.pr.maxWeight)) {
         best = {
           ex,
           pr,

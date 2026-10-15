@@ -3,9 +3,9 @@ import { ST_BACKUPS, runTx } from "./idb.js";
 
 /* Registro no IndexedDB: { id, user, date, at, sessions, data }
    — o mesmo formato das entradas antigas do localStorage, mais id e user. */
-export const backupId = (user, entry, i) => `${user}|${entry && entry.at ? entry.at : `${entry && entry.date || ""}#${i}`}`;
+export const backupId = (user, entry, i) => `${user}|${entry && entry.at ? entry.at : `${(entry && entry.date) || ""}#${i}`}`;
 
-const sortKey = b => String(b && (b.at || b.date) || "");
+const sortKey = (b) => String((b && (b.at || b.date)) || "");
 
 export function sortNewest(rows) {
   return rows.slice().sort((a, b) => sortKey(b).localeCompare(sortKey(a)));
@@ -36,7 +36,7 @@ export function readLegacyBackups(user = userId()) {
 }
 
 export async function dbListBackups(user = userId()) {
-  const rows = await runTx(ST_BACKUPS, "readonly", s => {
+  const rows = await runTx(ST_BACKUPS, "readonly", (s) => {
     const r = s.index("user").getAll(user);
     return () => r.result;
   });
@@ -45,19 +45,21 @@ export async function dbListBackups(user = userId()) {
 
 /* Grava vários registros numa transação (sem podar) — usado pela migração. */
 export function dbPutBackups(records) {
-  return runTx(ST_BACKUPS, "readwrite", s => {
-    records.forEach(r => s.put(r));
+  return runTx(ST_BACKUPS, "readwrite", (s) => {
+    records.forEach((r) => s.put(r));
   });
 }
 
 /* Grava o novo backup e poda os mais antigos além do limite, tudo na mesma
    transação: se a gravação falhar (cota), NADA é apagado. */
 export function dbSaveBackup(record, user = userId(), max = AUTOBACKUP_MAX) {
-  return runTx(ST_BACKUPS, "readwrite", s => {
+  return runTx(ST_BACKUPS, "readwrite", (s) => {
     s.put(record);
     const req = s.index("user").getAll(user);
     req.onsuccess = () => {
-      sortNewest(req.result).slice(max).forEach(r => s.delete(r.id));
+      sortNewest(req.result)
+        .slice(max)
+        .forEach((r) => s.delete(r.id));
     };
   });
 }

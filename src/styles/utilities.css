@@ -4,10 +4,38 @@
    Só entra aqui o que é de fato um ajuste isolado; o resto vira classe
    do componente.
    ============================================================ */
-.m-0{ margin:0; }
-.mt-2{ margin-top:2px; }
-.mt-10{ margin-top:10px; }
-.mt-12{ margin-top:12px; }
-.mt-14{ margin-top:14px; }
-.mb-14{ margin-bottom:14px; }
-.grow{ flex:1; }
+.m-0 {
+  margin: 0;
+}
+.mt-2 {
+  margin-top: 2px;
+}
+.mt-10 {
+  margin-top: 10px;
+}
+.mt-12 {
+  margin-top: 12px;
+}
+.mt-14 {
+  margin-top: 14px;
+}
+.mb-14 {
+  margin-bottom: 14px;
+}
+.grow {
+  flex: 1;
+}
+
+/* texto só para leitor de tela: some da vista, mas continua no nome acessível e em regiões aria-live */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

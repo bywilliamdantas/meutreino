@@ -1,3 +1,4 @@
+import { notifyViaServiceWorker } from "./notify.js";
 import { persist } from "./persistence.js";
 import { store } from "./store.js";
 import { showToast } from "./ui/toast.js";
@@ -17,12 +18,6 @@ export function checkReminder() {
   persist();
   const next = nextWorkoutLetter();
   const msg = `Não esqueça: hoje é ${workoutLabel(next)}.`;
-  if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-    try {
-      new Notification("Hora do treino", {
-        body: msg
-      });
-    } catch (e) {}
-  }
+  notifyViaServiceWorker("Hora do treino", msg, "lembrete-diario");
   showToast(msg);
 }

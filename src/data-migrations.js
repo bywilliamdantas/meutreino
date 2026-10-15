@@ -1,25 +1,31 @@
+import { normalizeBackupEvery } from "./backup/backup-reminder.js";
 import { SCHEMA_VERSION } from "./data/constants.js";
 import { newSessionId } from "./utils/ids.js";
 import { parseNum } from "./utils/numbers.js";
 
 export function migrateSessionEntry(entry) {
   if (!entry) return null;
-  if (typeof entry === "string") return {
-    letter: entry,
-    log: {}
-  };
+  if (typeof entry === "string")
+    return {
+      letter: entry,
+      log: {}
+    };
   if (!entry.log) entry.log = {};
-  Object.keys(entry.log).forEach(exId => {
+  Object.keys(entry.log).forEach((exId) => {
     const v = entry.log[exId];
     if (v && !Array.isArray(v)) {
       const weight = v.weight;
       const reps = v.reps;
-      const hasAny = weight !== "" && weight != null || reps !== "" && reps != null;
-      entry.log[exId] = hasAny ? [{
-        weight: parseNum(weight),
-        reps: parseNum(reps),
-        done: true
-      }] : [];
+      const hasAny = (weight !== "" && weight != null) || (reps !== "" && reps != null);
+      entry.log[exId] = hasAny
+        ? [
+            {
+              weight: parseNum(weight),
+              reps: parseNum(reps),
+              done: true
+            }
+          ]
+        : [];
     }
     if (!Array.isArray(entry.log[exId])) entry.log[exId] = [];
   });
@@ -31,13 +37,13 @@ export function migrateSessions(s) {
     s.sessions = {};
     return;
   }
-  Object.keys(s.sessions).forEach(k => {
+  Object.keys(s.sessions).forEach((k) => {
     const v = s.sessions[k];
     if (Array.isArray(v)) {
-      v.forEach(sess => {
+      v.forEach((sess) => {
         if (sess && !sess.id) sess.id = newSessionId();
         if (sess && !sess.log) sess.log = {};
-        Object.keys(sess.log || {}).forEach(exId => {
+        Object.keys(sess.log || {}).forEach((exId) => {
           if (!Array.isArray(sess.log[exId])) sess.log[exId] = [];
         });
       });
@@ -60,35 +66,47 @@ export function migrateSessions(s) {
    nunca é tocado aqui. */
 export function migrateSessionSnapshots(s) {
   if (!s.sessions || !s.workouts) return;
-  Object.keys(s.sessions).forEach(k => {
+  Object.keys(s.sessions).forEach((k) => {
     const arr = s.sessions[k];
     if (!Array.isArray(arr)) return;
-    arr.forEach(sess => {
+    arr.forEach((sess) => {
       if (!sess || sess.snapshot || !sess.log) return;
-      const ids = new Set(Object.keys(sess.log).filter(id => Array.isArray(sess.log[id]) && sess.log[id].length));
+      const ids = new Set(Object.keys(sess.log).filter((id) => Array.isArray(sess.log[id]) && sess.log[id].length));
       if (!ids.size) return;
       const w = s.workouts[sess.letter];
       if (!w || w.isRest) return;
-      const snap = (w.exercises || []).filter(ex => ids.has(ex.id)).map(ex => ({
-        id: ex.id,
-        name: ex.name || "",
-        type: ex.type || "strength",
-        ...(ex.group ? {
-          group: ex.group
-        } : {}),
-        ...(ex.sets !== undefined ? {
-          sets: ex.sets
-        } : {}),
-        ...(ex.reps !== undefined ? {
-          reps: ex.reps
-        } : {}),
-        ...(ex.rest !== undefined ? {
-          rest: ex.rest
-        } : {}),
-        ...(ex.mins !== undefined ? {
-          mins: ex.mins
-        } : {})
-      }));
+      const snap = (w.exercises || [])
+        .filter((ex) => ids.has(ex.id))
+        .map((ex) => ({
+          id: ex.id,
+          name: ex.name || "",
+          type: ex.type || "strength",
+          ...(ex.group
+            ? {
+                group: ex.group
+              }
+            : {}),
+          ...(ex.sets !== undefined
+            ? {
+                sets: ex.sets
+              }
+            : {}),
+          ...(ex.reps !== undefined
+            ? {
+                reps: ex.reps
+              }
+            : {}),
+          ...(ex.rest !== undefined
+            ? {
+                rest: ex.rest
+              }
+            : {}),
+          ...(ex.mins !== undefined
+            ? {
+                mins: ex.mins
+              }
+            : {})
+        }));
       if (snap.length) sess.snapshot = snap;
     });
   });
@@ -117,18 +135,21 @@ export function migrateSettings(s) {
     weeklyGoal: null,
     restTimerActive: null
   };
-  if (!s.settings.reminder) s.settings.reminder = {
-    ...d.reminder
-  };
+  if (!s.settings.reminder)
+    s.settings.reminder = {
+      ...d.reminder
+    };
   if (s.settings.reminder.enabled === undefined) s.settings.reminder.enabled = false;
   if (!s.settings.reminder.time) s.settings.reminder.time = "18:00";
   if (s.settings.reminder.lastNotifiedDate === undefined) s.settings.reminder.lastNotifiedDate = null;
   if (s.settings.lastBackupAt === undefined) s.settings.lastBackupAt = null;
   if (s.settings.workoutsCollapsed === undefined) s.settings.workoutsCollapsed = false;
   if (!s.settings.collapsedSections || typeof s.settings.collapsedSections !== "object" || Array.isArray(s.settings.collapsedSections)) {
-    s.settings.collapsedSections = s.settings.workoutsCollapsed ? {
-      workouts: true
-    } : {};
+    s.settings.collapsedSections = s.settings.workoutsCollapsed
+      ? {
+          workouts: true
+        }
+      : {};
   }
   if (s.settings.restDuration === undefined) s.settings.restDuration = 90;
   if (s.settings.weekStartsMonday === undefined) s.settings.weekStartsMonday = false;
@@ -143,6 +164,11 @@ export function migrateSettings(s) {
   if (s.settings.keepAwake === undefined) s.settings.keepAwake = true;
   /* som (beep) ao fim do descanso; ligado por padrão */
   if (typeof s.settings.beepEnabled !== "boolean") s.settings.beepEnabled = true;
+  /* lembrete de backup: a cada N treinos (3, 7 ou 14; 0 = desligado; padrão 7).
+     Campos opcionais — arquivos antigos só ganham o padrão, sem subir SCHEMA_VERSION. */
+  s.settings.backupEvery = normalizeBackupEvery(s.settings.backupEvery);
+  if (typeof s.settings.backupSnoozedUntil !== "string" || Number.isNaN(new Date(s.settings.backupSnoozedUntil).getTime()))
+    s.settings.backupSnoozedUntil = null;
   if (s.settings.avatarUrl === undefined) s.settings.avatarUrl = null;
   if (s.settings.displayName === undefined) s.settings.displayName = "";
 }
@@ -167,14 +193,14 @@ export function migrateActiveSession(s) {
 
 export function migrateWorkouts(w) {
   if (!w) return;
-  Object.values(w.workouts || {}).forEach(wk => {
-    (wk.exercises || []).forEach(ex => {
+  Object.values(w.workouts || {}).forEach((wk) => {
+    (wk.exercises || []).forEach((ex) => {
       if (!ex.type) ex.type = "strength";
     });
   });
   if (!Array.isArray(w.body)) w.body = [];
-  w.body = w.body.filter(b => b && typeof b === "object" && /^\d{4}-\d{2}-\d{2}$/.test(b.date || ""));
-  w.body.forEach(b => {
+  w.body = w.body.filter((b) => b && typeof b === "object" && /^\d{4}-\d{2}-\d{2}$/.test(b.date || ""));
+  w.body.forEach((b) => {
     if (!b.id) b.id = "b" + Math.random().toString(36).slice(2, 9);
   });
   w.schemaVersion = SCHEMA_VERSION;

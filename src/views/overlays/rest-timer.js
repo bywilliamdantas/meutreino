@@ -1,5 +1,6 @@
 import { playBeep } from "../../audio/beep.js";
 import { restForExercise } from "../../exercises/exercises.js";
+import { notifyViaServiceWorker } from "../../notify.js";
 import { persist } from "../../persistence.js";
 import { store } from "../../store.js";
 import { showToast } from "../../ui/toast.js";
@@ -27,6 +28,29 @@ export function stopRestTimer() {
   renderRestTimer();
 }
 
+/* Anuncia o fim do descanso para leitor de tela numa região aria-live="polite" que fica no index.html
+   (#restLive): ela precisa existir antes da mudança de texto e não pode estar dentro do #restTimerRoot,
+   que é esvaziado ao terminar. Só escreve texto: o foco não se mexe. O texto é colocado depois de um
+   instante e apagado depois, para a mesma frase ser anunciada de novo no próximo descanso. */
+const ANNOUNCE_DELAY_MS = 100;
+const ANNOUNCE_CLEAR_MS = 5000;
+let announceTimers = [];
+
+function announce(msg) {
+  const live = document.getElementById("restLive");
+  if (!live) return;
+  announceTimers.forEach(clearTimeout);
+  live.textContent = "";
+  announceTimers = [
+    setTimeout(() => {
+      live.textContent = msg;
+    }, ANNOUNCE_DELAY_MS),
+    setTimeout(() => {
+      live.textContent = "";
+    }, ANNOUNCE_CLEAR_MS)
+  ];
+}
+
 /* Só apita se o descanso acabou agora: ao voltar para o app minutos depois,
    um beep atrasado seria confuso (o toast e a vibração continuam como antes). */
 const BEEP_MAX_LATE_MS = 3000;
@@ -42,14 +66,9 @@ export function finishRestTimer(root) {
   persist();
   haptic([200, 100, 200]);
   if (store.data.settings.beepEnabled !== false && lateMs < BEEP_MAX_LATE_MS) playBeep();
-  if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-    try {
-      new Notification("Descanso acabou", {
-        body: "Bora pra próxima série."
-      });
-    } catch (e) {}
-  }
+  notifyViaServiceWorker("Descanso acabou", "Bora pra próxima série.", "fim-descanso");
   showToast("Descanso acabou — próxima série!");
+  announce("Descanso acabou. Próxima série.");
   root.innerHTML = "";
   applyRestLayout(root, false);
 }
@@ -84,7 +103,8 @@ export function applyRestLayout(root, active) {
   const bottom = restBottomValue();
   if (bottom !== layoutCache.bottom) {
     layoutCache.bottom = bottom;
-    if (bottom) root.style.setProperty("--rest-bottom", bottom);else root.style.removeProperty("--rest-bottom");
+    if (bottom) root.style.setProperty("--rest-bottom", bottom);
+    else root.style.removeProperty("--rest-bottom");
   }
 }
 

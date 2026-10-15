@@ -33,7 +33,7 @@ export function normalizeGoal(goal) {
 /* Padrão da meta = quantidade de treinos que não são descanso no ciclo. */
 export function defaultWeeklyGoal(order, isRest) {
   const list = Array.isArray(order) ? order : [];
-  return normalizeGoal(list.filter(letter => !isRest(letter)).length);
+  return normalizeGoal(list.filter((letter) => !isRest(letter)).length);
 }
 
 /* Meta efetiva: a escolhida em Ajustes ou, se não houver (null/inválida), o padrão. */
@@ -65,7 +65,7 @@ export function countByWeek(sessions, isRest, mondayStart) {
   for (const key of Object.keys(sessions || {})) {
     const day = parseKey(key);
     if (!day) continue;
-    const n = entriesOf(sessions[key]).filter(s => s && !isRest(s.letter)).length;
+    const n = entriesOf(sessions[key]).filter((s) => s && !isRest(s.letter)).length;
     if (!n) continue;
     const wk = keyOf(startOfWeek(day, mondayStart));
     counts.set(wk, (counts.get(wk) || 0) + n);

@@ -1,4 +1,5 @@
 import { persist } from "../persistence.js";
+import { markSessionsDirty } from "../storage/session-store.js";
 import { store } from "../store.js";
 import { showToast } from "../ui/toast.js";
 import { haptic, prefersReducedMotion } from "../utils/dom.js";
@@ -59,7 +60,7 @@ export function endActiveSession() {
   const totalMs = activeElapsedMs();
   const dateKey = a.startedDate || todayKey();
   const arr = sessionsFor(dateKey).slice();
-  let target = arr.find(s => s.letter === letter && !s.endedAt);
+  let target = arr.find((s) => s.letter === letter && !s.endedAt);
   const now = Date.now();
   if (target) {
     stampSnapshot(target);
@@ -75,6 +76,7 @@ export function endActiveSession() {
     });
   }
   store.data.sessions[dateKey] = arr;
+  markSessionsDirty(dateKey);
   a.state = "idle";
   a.letter = null;
   a.elapsedMs = 0;
@@ -118,7 +120,7 @@ export function renderHeroClock() {
 export async function syncWakeLock() {
   if (!("wakeLock" in navigator)) return;
   const a = store.data.activeSession;
-  const training = a.state === "running" || store.overlay && store.overlay.type === "day" && store.overlay.dateKey === todayKey();
+  const training = a.state === "running" || (store.overlay && store.overlay.type === "day" && store.overlay.dateKey === todayKey());
   const want = !!store.data.settings.keepAwake && training && document.visibilityState === "visible";
   try {
     if (want && !store.wakeLock) {
@@ -149,10 +151,10 @@ export function startHeroClockTicker() {
 
 export function runCountUp() {
   if (prefersReducedMotion()) {
-    document.querySelectorAll("[data-count]").forEach(el => el.textContent = el.dataset.count);
+    document.querySelectorAll("[data-count]").forEach((el) => (el.textContent = el.dataset.count));
     return;
   }
-  document.querySelectorAll("[data-count]").forEach(el => {
+  document.querySelectorAll("[data-count]").forEach((el) => {
     const target = parseInt(el.dataset.count, 10) || 0;
     if (target <= 0) {
       el.textContent = "0";
@@ -164,7 +166,8 @@ export function runCountUp() {
       const p = Math.min(1, (t - start) / duration);
       const eased = 1 - Math.pow(1 - p, 3);
       el.textContent = Math.round(target * eased);
-      if (p < 1) requestAnimationFrame(tick);else el.textContent = target;
+      if (p < 1) requestAnimationFrame(tick);
+      else el.textContent = target;
     }
     requestAnimationFrame(tick);
   });

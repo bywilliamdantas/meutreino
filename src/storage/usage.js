@@ -1,4 +1,4 @@
-import { storageKey } from "../config.js";
+import { coreKey, journalKey, storageKey } from "../config.js";
 import { store } from "../store.js";
 
 /* ~5 MB é o teto típico do localStorage por origem (varia por navegador).
@@ -27,9 +27,11 @@ export function localStorageBytes() {
   return chars * 2;
 }
 
+/* Núcleo + diário + cópia antiga (que continua ocupando espaço até o próximo backup). */
 function mainDataBytes() {
   try {
-    return (window.localStorage.getItem(storageKey()) || "").length * 2;
+    const ls = window.localStorage;
+    return [coreKey(), journalKey(), storageKey()].reduce((n, k) => n + (ls.getItem(k) || "").length * 2, 0);
   } catch (e) {
     return 0;
   }

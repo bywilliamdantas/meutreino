@@ -4,16 +4,18 @@ import { e1rm, isCardio, isPerformed, isWork, roundToStep } from "../utils/numbe
 import { sessionsFor } from "../workouts/sessions.js";
 
 export function forEachWorkSet(exId, cb) {
-  Object.keys(store.data.sessions).sort().forEach(k => {
-    sessionsFor(k).forEach(sess => {
-      const sets = sess.log && sess.log[exId];
-      if (!Array.isArray(sets)) return;
-      sets.forEach(s => {
-        if (!isWork(s) || !isPerformed(s) || !(s.weight > 0)) return;
-        cb(s, k, sess);
+  Object.keys(store.data.sessions)
+    .sort()
+    .forEach((k) => {
+      sessionsFor(k).forEach((sess) => {
+        const sets = sess.log && sess.log[exId];
+        if (!Array.isArray(sets)) return;
+        sets.forEach((s) => {
+          if (!isWork(s) || !isPerformed(s) || !(s.weight > 0)) return;
+          cb(s, k, sess);
+        });
       });
     });
-  });
 }
 
 export function bestBefore(exId, dateKey, sessionId) {
@@ -28,24 +30,27 @@ export function bestBefore(exId, dateKey, sessionId) {
     const e = e1rm(s.weight, s.reps);
     if (e > best1rm) best1rm = e;
   });
-  return has ? {
-    maxWeight,
-    best1rm
-  } : null;
+  return has
+    ? {
+        maxWeight,
+        best1rm
+      }
+    : null;
 }
 
 export function exercisePRs(exId) {
   let out = null;
   forEachWorkSet(exId, (s, k) => {
     const e = e1rm(s.weight, s.reps);
-    if (!out) out = {
-      maxWeight: s.weight,
-      maxWeightDate: k,
-      maxWeightReps: s.reps,
-      best1rm: e,
-      best1rmDate: k,
-      lastDate: k
-    };
+    if (!out)
+      out = {
+        maxWeight: s.weight,
+        maxWeightDate: k,
+        maxWeightReps: s.reps,
+        best1rm: e,
+        best1rmDate: k,
+        lastDate: k
+      };
     if (s.weight >= out.maxWeight) {
       out.maxWeight = s.weight;
       out.maxWeightDate = k;
@@ -78,13 +83,15 @@ export function checkPR(exId, set, sets, idx) {
 }
 
 export function lastWorkSets(exId, beforeKey) {
-  const keys = Object.keys(store.data.sessions).filter(k => k < beforeKey).sort();
+  const keys = Object.keys(store.data.sessions)
+    .filter((k) => k < beforeKey)
+    .sort();
   for (let i = keys.length - 1; i >= 0; i--) {
     const arr = sessionsFor(keys[i]);
     for (let j = arr.length - 1; j >= 0; j--) {
       const raw = arr[j].log && arr[j].log[exId];
       if (!Array.isArray(raw)) continue;
-      const sets = raw.filter(s => isWork(s) && isPerformed(s) && s.weight > 0);
+      const sets = raw.filter((s) => isWork(s) && isPerformed(s) && s.weight > 0);
       if (sets.length) return sets;
     }
   }
@@ -95,7 +102,9 @@ export function lastWorkSets(exId, beforeKey) {
    teve séries de trabalho feitas, antes de `beforeKey`. Cada item traz as séries,
    a data e o RPE anotado naquela sessão (sess.meta[exId].rpe), se existir. */
 export function recentWorkSessions(exId, beforeKey, limit = 3) {
-  const keys = Object.keys(store.data.sessions).filter(k => k < beforeKey).sort();
+  const keys = Object.keys(store.data.sessions)
+    .filter((k) => k < beforeKey)
+    .sort();
   const out = [];
   for (let i = keys.length - 1; i >= 0 && out.length < limit; i--) {
     const arr = sessionsFor(keys[i]);
@@ -103,7 +112,7 @@ export function recentWorkSessions(exId, beforeKey, limit = 3) {
       const sess = arr[j];
       const raw = sess.log && sess.log[exId];
       if (!Array.isArray(raw)) continue;
-      const sets = raw.filter(s => isWork(s) && isPerformed(s) && s.weight > 0);
+      const sets = raw.filter((s) => isWork(s) && isPerformed(s) && s.weight > 0);
       if (!sets.length) continue;
       const rpe = sess.meta && sess.meta[exId] && sess.meta[exId].rpe;
       out.push({
@@ -118,12 +127,12 @@ export function recentWorkSessions(exId, beforeKey, limit = 3) {
 
 /* Resumo de uma sessão: carga mais alta, reps mínimas nessa carga e melhor 1RM estimado. */
 function summarizeSession(item) {
-  const top = Math.max(...item.sets.map(s => s.weight));
-  const atTop = item.sets.filter(s => s.weight === top);
+  const top = Math.max(...item.sets.map((s) => s.weight));
+  const atTop = item.sets.filter((s) => s.weight === top);
   return {
     top,
-    minReps: Math.min(...atTop.map(s => s.reps != null ? s.reps : 0)),
-    best1rm: Math.max(...item.sets.map(s => e1rm(s.weight, s.reps))),
+    minReps: Math.min(...atTop.map((s) => (s.reps != null ? s.reps : 0))),
+    best1rm: Math.max(...item.sets.map((s) => e1rm(s.weight, s.reps))),
     rpe: item.rpe
   };
 }

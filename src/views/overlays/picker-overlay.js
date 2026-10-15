@@ -2,7 +2,15 @@ import { newExId } from "../../counters.js";
 import { EXERCISE_LIBRARY } from "../../data/exercise-library.js";
 import { ICONS } from "../../data/icons.js";
 import { exThumbHtml } from "../../exercises/exercise-visuals.js";
-import { SELECTABLE_GROUPS, customGroupFor, getAllExerciseNames, getCustomExerciseNames, getLibraryNameSet, isCardioName, isSelectableGroup } from "../../exercises/exercises.js";
+import {
+  customGroupFor,
+  groupOptionsHtml,
+  getAllExerciseNames,
+  getCustomExerciseNames,
+  getLibraryNameSet,
+  isCardioName,
+  isSelectableGroup
+} from "../../exercises/exercises.js";
 import { persist } from "../../persistence.js";
 import { store } from "../../store.js";
 import { colorFor, toneVars } from "../../ui/helpers.js";
@@ -15,30 +23,30 @@ import { render } from "../render.js";
 import { closeOverlay } from "./overlay-manager.js";
 
 export function renderPickerOverlay(root) {
-  const {
-    dateKey
-  } = store.overlay;
+  const { dateKey } = store.overlay;
   root.innerHTML = `<div class="sheet-backdrop" id="sheetBackdrop"></div>
-  <div class="sheet" role="dialog" aria-modal="true">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
     <div class="sheet-handle"></div>
     <div class="sheet-header">
-      <div class="sheet-date">Escolher treino</div>
+      <div class="sheet-date" id="sheetTitle">Escolher treino</div>
       <button class="icon-btn" id="sheetClose" aria-label="fechar">${ICONS.close}</button>
     </div>
     <div class="sheet-picker">
-      ${store.data.order.map(k => {
-    const wk = store.data.workouts[k];
-    const isRest = wk?.isRest;
-    return `<button class="sheet-picker-item" data-role="pickletter" data-letter="${k}">
+      ${store.data.order
+        .map((k) => {
+          const wk = store.data.workouts[k];
+          const isRest = wk?.isRest;
+          return `<button class="sheet-picker-item" data-role="pickletter" data-letter="${escapeAttr(k)}">
           <div class="spi-chip" style="${toneVars(colorFor(k, store.data.order))}">${isRest ? ICONS.moonSmall : k}</div>
           <div class="spi-name">${escapeHtml(wk?.name || workoutLabel(k))}</div>
         </button>`;
-  }).join("")}
+        })
+        .join("")}
     </div>
   </div>`;
   document.getElementById("sheetBackdrop").addEventListener("click", closeOverlay);
   document.getElementById("sheetClose").addEventListener("click", closeOverlay);
-  document.querySelectorAll('[data-role="pickletter"]').forEach(b => {
+  document.querySelectorAll('[data-role="pickletter"]').forEach((b) => {
     b.addEventListener("click", () => {
       haptic(6);
       const letter = b.dataset.letter;
@@ -53,24 +61,22 @@ export function renderPickerOverlay(root) {
 }
 
 export function renderExercisePickerOverlay(root) {
-  const {
-    mode
-  } = store.overlay;
+  const { mode } = store.overlay;
   root.innerHTML = `<div class="sheet-backdrop" id="sheetBackdrop"></div>
-  <div class="sheet" role="dialog" aria-modal="true">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
     <div class="sheet-handle"></div>
     <div class="sheet-header">
-      <div class="sheet-date">${mode === "rename" ? "Escolher exercício" : "Adicionar exercícios"}</div>
+      <div class="sheet-date" id="sheetTitle">${mode === "rename" ? "Escolher exercício" : "Adicionar exercícios"}</div>
       <button class="icon-btn" id="sheetClose" aria-label="fechar">${ICONS.close}</button>
     </div>
-    <input type="text" id="exPickerSearch" class="ex-picker-search" placeholder="Buscar ou digitar um novo nome…" value="${escapeAttr(store.overlay.query)}" autocomplete="off" autocapitalize="sentences">
+    <input type="text" id="exPickerSearch" class="ex-picker-search" data-autofocus placeholder="Buscar ou digitar um novo nome…" value="${escapeAttr(store.overlay.query)}" autocomplete="off" autocapitalize="sentences">
     <div class="ex-picker-list" id="exPickerList"></div>
     ${mode === "add" ? `<button class="footer-btn primary picker-confirm" id="exPickerConfirm">Adicionar selecionados</button>` : ""}
   </div>`;
   document.getElementById("sheetBackdrop").addEventListener("click", closeOverlay);
   document.getElementById("sheetClose").addEventListener("click", closeOverlay);
   const searchInput = document.getElementById("exPickerSearch");
-  searchInput.addEventListener("input", e => {
+  searchInput.addEventListener("input", (e) => {
     store.overlay.query = e.target.value;
     renderExercisePickerList();
   });
@@ -80,7 +86,7 @@ export function renderExercisePickerOverlay(root) {
     confirmBtn.addEventListener("click", async () => {
       const names = Array.from(store.overlay.selected);
       const q = store.overlay.query.trim();
-      if (store.overlay.customChecked && q && !names.some(n => n.toLowerCase() === q.toLowerCase())) {
+      if (store.overlay.customChecked && q && !names.some((n) => n.toLowerCase() === q.toLowerCase())) {
         names.push(q);
       }
       if (names.length === 0) {
@@ -89,7 +95,7 @@ export function renderExercisePickerOverlay(root) {
       }
       const w = store.data.workouts[store.overlay.letter];
       const typedCustom = store.overlay.customChecked && q ? q.toLowerCase() : null;
-      names.forEach(n => {
+      names.forEach((n) => {
         const ex = {
           id: newExId(),
           name: n,
@@ -117,7 +123,7 @@ export function renderExercisePickerOverlay(root) {
   }, 50);
 }
 
-const qLower = () => (store.overlay && store.overlay.query || "").trim().toLowerCase();
+const qLower = () => ((store.overlay && store.overlay.query) || "").trim().toLowerCase();
 
 /* Grupo a gravar num exercício novo: nada se o nome é da biblioteca (ela já define o grupo);
    senão a escolha feita no seletor (só vale para o nome digitado) ou o grupo já usado
@@ -134,8 +140,7 @@ function groupSelectHtml() {
   return `<label class="ex-picker-group-select">
     <span>Grupo muscular</span>
     <select id="exPickerGroup" aria-label="Grupo muscular do novo exercício">
-      <option value="">Outros (sem grupo)</option>
-      ${SELECTABLE_GROUPS.map(g => `<option value="${escapeAttr(g)}" ${g === cur ? "selected" : ""}>${escapeHtml(g)}</option>`).join("")}
+      ${groupOptionsHtml(cur)}
     </select>
   </label>`;
 }
@@ -143,26 +148,29 @@ function groupSelectHtml() {
 export function renderExercisePickerList() {
   const listEl = document.getElementById("exPickerList");
   if (!listEl || !store.overlay || store.overlay.type !== "exercisePicker") return;
-  const {
-    mode,
-    selected
-  } = store.overlay;
+  const { mode, selected } = store.overlay;
   const qRaw = store.overlay.query.trim();
   const q = qRaw.toLowerCase();
-  const itemHtml = n => {
+  const itemHtml = (n) => {
     if (mode === "add") {
       return `<label class="ex-picker-item">
         <input type="checkbox" data-name="${escapeAttr(n)}" ${selected.has(n) ? "checked" : ""}>
-        ${exThumbHtml({
-        name: n
-      }, "sm")}
+        ${exThumbHtml(
+          {
+            name: n
+          },
+          "sm"
+        )}
         <span>${escapeHtml(n)}</span>
       </label>`;
     }
     return `<button type="button" class="ex-picker-item" data-role="pickexname" data-name="${escapeAttr(n)}">
-      ${exThumbHtml({
-      name: n
-    }, "sm")}
+      ${exThumbHtml(
+        {
+          name: n
+        },
+        "sm"
+      )}
       <span>${escapeHtml(n)}</span>
     </button>`;
   };
@@ -180,13 +188,13 @@ export function renderExercisePickerList() {
   let html = "";
   if (q) {
     const allNames = getAllExerciseNames();
-    const filtered = allNames.filter(n => n.toLowerCase().includes(q));
-    const exactMatch = allNames.some(n => n.toLowerCase() === q);
+    const filtered = allNames.filter((n) => n.toLowerCase().includes(q));
+    const exactMatch = allNames.some((n) => n.toLowerCase() === q);
     if (!exactMatch) {
       html += customRowHtml();
       html += groupSelectHtml();
     }
-    filtered.forEach(n => {
+    filtered.forEach((n) => {
       html += itemHtml(n);
     });
   } else {
@@ -197,7 +205,7 @@ export function renderExercisePickerList() {
         <div class="ex-picker-group-list">${custom.map(itemHtml).join("")}</div>
       </details>`;
     }
-    Object.keys(EXERCISE_LIBRARY).forEach(group => {
+    Object.keys(EXERCISE_LIBRARY).forEach((group) => {
       const list = EXERCISE_LIBRARY[group];
       html += `<details class="ex-picker-group">
         <summary class="ex-picker-group-title"><span>${escapeHtml(group)}</span> <span class="ex-picker-count">${list.length}</span></summary>
@@ -206,10 +214,10 @@ export function renderExercisePickerList() {
     });
   }
   listEl.innerHTML = html;
-  listEl.querySelectorAll("details.ex-picker-group").forEach(d => {
+  listEl.querySelectorAll("details.ex-picker-group").forEach((d) => {
     d.addEventListener("toggle", () => {
       if (!d.open) return;
-      listEl.querySelectorAll("details.ex-picker-group[open]").forEach(o => {
+      listEl.querySelectorAll("details.ex-picker-group[open]").forEach((o) => {
         if (o !== d) o.open = false;
       });
       d.scrollIntoView({
@@ -218,31 +226,35 @@ export function renderExercisePickerList() {
     });
   });
   const groupSel = document.getElementById("exPickerGroup");
-  if (groupSel) groupSel.addEventListener("change", e => {
-    store.overlay.customGroup = e.target.value;
-  });
+  if (groupSel)
+    groupSel.addEventListener("change", (e) => {
+      store.overlay.customGroup = e.target.value;
+    });
   if (mode === "add") {
     const customCheck = document.getElementById("exPickerCustomCheck");
-    if (customCheck) customCheck.addEventListener("change", e => {
-      store.overlay.customChecked = e.target.checked;
-    });
-    listEl.querySelectorAll('input[type="checkbox"][data-name]').forEach(cb => {
-      cb.addEventListener("change", e => {
+    if (customCheck)
+      customCheck.addEventListener("change", (e) => {
+        store.overlay.customChecked = e.target.checked;
+      });
+    listEl.querySelectorAll('input[type="checkbox"][data-name]').forEach((cb) => {
+      cb.addEventListener("change", (e) => {
         const n = e.target.dataset.name;
-        if (e.target.checked) store.overlay.selected.add(n);else store.overlay.selected.delete(n);
+        if (e.target.checked) store.overlay.selected.add(n);
+        else store.overlay.selected.delete(n);
       });
     });
   } else {
-    listEl.querySelectorAll('[data-role="pickexname"]').forEach(btn => {
+    listEl.querySelectorAll('[data-role="pickexname"]').forEach((btn) => {
       btn.addEventListener("click", async () => {
         const name = btn.dataset.name;
         const w = store.data.workouts[store.overlay.letter];
-        const ex = w.exercises.find(e => e.id === store.overlay.exId);
+        const ex = w.exercises.find((e) => e.id === store.overlay.exId);
         if (!ex) return;
         ex.name = name;
         if (isCardioName(name)) ex.type = "cardio";
         const group = groupForName(name, name.toLowerCase() === qLower());
-        if (group) ex.group = group;else delete ex.group;
+        if (group) ex.group = group;
+        else delete ex.group;
         haptic(6);
         closeOverlay();
         render();

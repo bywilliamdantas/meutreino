@@ -5,13 +5,19 @@ export function isLastSet(sets, setidx) {
   return Array.isArray(sets) && sets.length > 0 && setidx === sets.length - 1;
 }
 
+/* Séries de um exercício quando o campo "séries" está vazio no editor
+   (o mesmo número que aparece de exemplo no campo e na estimativa de duração). */
+export const DEFAULT_SETS = 3;
+
 /* Marcou a série: deve iniciar o descanso?
-   - Superset (ex.ss): nunca inicia — comportamento antigo, inalterado.
-   - Última série do exercício: não inicia (não há próxima série para descansar).
+   - Superset (ex.ss): nunca inicia — vai direto para o próximo exercício.
+   - Última série do exercício: inicia só se ainda há outras séries pendentes no treino
+     (descanso antes do próximo exercício). `workoutPending` indefinido = há pendências.
    - Exercício sem cadastro (ex indefinido) segue a regra normal. */
-export function shouldStartRest(ex, sets, setidx) {
+export function shouldStartRest(ex, sets, setidx, workoutPending = true) {
   if (ex && ex.ss) return false;
-  return !isLastSet(sets, setidx);
+  if (!isLastSet(sets, setidx)) return true;
+  return workoutPending === true;
 }
 
 /* Peso e reps da série acima (o que a tela mostra: valor salvo ou, se vazio, o padrão).

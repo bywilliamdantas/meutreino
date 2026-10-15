@@ -24,7 +24,7 @@ export function applyTheme(pref) {
     }
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) {
-      const dark = pref === "dark" || pref === "auto" && !window.matchMedia("(prefers-color-scheme: light)").matches;
+      const dark = pref === "dark" || (pref === "auto" && !window.matchMedia("(prefers-color-scheme: light)").matches);
       meta.setAttribute("content", dark ? THEME_COLOR.dark : THEME_COLOR.light);
     }
   } catch (e) {}

@@ -22,7 +22,7 @@ export function categoryForWorkout(w) {
 export function estimateWorkoutMs(w) {
   if (!w || w.isRest || !w.exercises || !w.exercises.length) return 0;
   let total = 0;
-  w.exercises.forEach(ex => {
+  w.exercises.forEach((ex) => {
     if (isCardio(ex)) {
       total += (parseNum(ex.mins) || 20) * 60000;
     } else {
@@ -35,7 +35,7 @@ export function estimateWorkoutMs(w) {
 }
 
 export function nextWorkoutLetter() {
-  const order = store.data.order.filter(k => !isRestLetter(k));
+  const order = store.data.order.filter((k) => !isRestLetter(k));
   if (!order.length) return store.data.order[0];
   const last = lastNonRestSessionEntry();
   if (!last) return order[0];

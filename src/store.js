@@ -9,6 +9,8 @@ export const store = {
   activeTab: "inicio",
   treinosView: "list",
   treinosFilter: "all",
+  treinosReorder: false,
+  exMoreOpen: null,
   treinosEditKey: null,
   perfilOpen: false,
   perfilEditingName: false,
@@ -46,6 +48,8 @@ export const store = {
         lastNotifiedDate: null
       },
       lastBackupAt: null,
+      backupEvery: 7,
+      backupSnoozedUntil: null,
       workoutsCollapsed: false,
       collapsedSections: {},
       restDuration: 90,

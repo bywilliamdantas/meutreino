@@ -1,10 +1,12 @@
 import { bootApp } from "../boot.js";
 import { SESSION_KEY } from "../config.js";
-import { AUTOBACKUP_KEY, SESSION_IDLE_DAYS, STORAGE_KEY } from "../data/constants.js";
+import { AUTOBACKUP_KEY, CORE_KEY, SESSION_IDLE_DAYS, STORAGE_KEY } from "../data/constants.js";
 import { getTabFromHash } from "../router.js";
+import { persistOnHide } from "../persistence.js";
 import { store } from "../store.js";
 import { showToast } from "../ui/toast.js";
 import { renderLogin } from "../views/login-view.js";
+import { renderOverlay } from "../views/overlays/overlay-manager.js";
 import { fetchUsers, tryLogin } from "./crypto.js";
 import { isValidPin, resetPinFails, verifyPin } from "./pin.js";
 
@@ -54,7 +56,7 @@ function storeCredential(user, password) {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const TOUCH_EVERY_MS = 10 * 60 * 1000;
-const idleDaysKey = username => `gym-idle-days:${String(username || "").toLowerCase()}`;
+const idleDaysKey = (username) => `gym-idle-days:${String(username || "").toLowerCase()}`;
 
 /* Prazo de inatividade (dias) — preferência do aparelho, por usuário. Fica fora
    de store.data para poder ser lida antes de carregar os dados. */
@@ -85,12 +87,14 @@ function readRawSession() {
 /* Treino em andamento (activeSession.state diferente de "idle"): vale o estado
    em memória e, no boot (dados ainda não carregados), o JSON salvo. */
 export function hasActiveWorkout(username) {
-  const active = st => typeof st === "string" && st !== "idle";
+  const active = (st) => typeof st === "string" && st !== "idle";
   try {
-    if (store.currentUser && (!username || store.currentUser.username === username) && store.data.activeSession && active(store.data.activeSession.state)) return true;
+    if (store.currentUser && (!username || store.currentUser.username === username) && store.data.activeSession && active(store.data.activeSession.state))
+      return true;
   } catch (e) {}
   try {
-    const raw = username ? window.localStorage.getItem(`${STORAGE_KEY}:${username}`) : null;
+    // núcleo (v8.6) tem prioridade: a cópia antiga fica com activeSession desatualizado
+    const raw = username ? window.localStorage.getItem(`${CORE_KEY}:${username}`) || window.localStorage.getItem(`${STORAGE_KEY}:${username}`) : null;
     const d = raw ? JSON.parse(raw) : null;
     return !!(d && d.activeSession && active(d.activeSession.state));
   } catch (e) {}
@@ -178,6 +182,7 @@ export function enforceSessionExpiry() {
   if (!still) {
     store.currentUser = null;
     store.overlay = null;
+    renderOverlay(); // fecha o painel aberto e tira o inert do fundo, senão o login ficaria inerte
     try {
       window.location.hash = "";
     } catch (e) {}
@@ -223,7 +228,7 @@ export async function doLoginPin(username, pin, keep) {
   store.loginUser = username;
   renderLogin();
   let user = null;
-  const fail = msg => {
+  const fail = (msg) => {
     store.authBusy = false;
     store.authError = msg;
     renderLogin();
@@ -240,7 +245,7 @@ export async function doLoginPin(username, pin, keep) {
   user = { username: r.rec.username, name: r.rec.name };
   const users = await fetchUsers();
   if (users) {
-    const u = users.find(x => x.username.toLowerCase() === user.username.toLowerCase());
+    const u = users.find((x) => x.username.toLowerCase() === user.username.toLowerCase());
     if (!u) return fail("Esse usuário não existe mais. Fale com seu treinador.");
     user = { username: u.username, name: u.name || u.username };
   }
@@ -249,10 +254,12 @@ export async function doLoginPin(username, pin, keep) {
 }
 
 export function doLogout() {
+  persistOnHide(); // grava o núcleo e inicia o flush das sessões antes de trocar de usuário
   clearSession();
   store.currentUser = null;
   store.authError = "";
   store.overlay = null;
+  renderOverlay();
   try {
     window.location.hash = "";
   } catch (e) {}

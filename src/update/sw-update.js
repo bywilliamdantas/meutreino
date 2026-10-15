@@ -51,14 +51,14 @@ try {
 } catch (e) {}
 
 export function swRequest(worker, msg, timeoutMs) {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     if (!worker) {
       resolve(null);
       return;
     }
     const ch = new MessageChannel();
     const timer = setTimeout(() => resolve(null), timeoutMs);
-    ch.port1.onmessage = e => {
+    ch.port1.onmessage = (e) => {
       clearTimeout(timer);
       resolve(e.data);
     };
@@ -72,7 +72,7 @@ export function swRequest(worker, msg, timeoutMs) {
 }
 
 export function waitInstalled(worker, timeoutMs) {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     if (!worker || worker.state === "installed" || worker.state === "activated" || worker.state === "redundant") {
       resolve();
       return;
@@ -97,10 +97,14 @@ export function applyWaitingUpdate(reg) {
 }
 
 export async function checkAssetsChanged() {
-  const worker = store.swRegistration && store.swRegistration.active || navigator.serviceWorker.controller;
-  const res = await swRequest(worker, {
-    type: "REFRESH_ASSETS"
-  }, 20000);
+  const worker = (store.swRegistration && store.swRegistration.active) || navigator.serviceWorker.controller;
+  const res = await swRequest(
+    worker,
+    {
+      type: "REFRESH_ASSETS"
+    },
+    20000
+  );
   if (!res || !res.ok) return null;
   const versionDiffers = !!(res.remoteVersion && res.remoteVersion !== APP_VERSION);
   return res.changed || versionDiffers;
@@ -177,11 +181,11 @@ export async function hardRefreshApp() {
   try {
     if ("serviceWorker" in navigator) {
       const regs = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(regs.map(r => r.unregister()));
+      await Promise.all(regs.map((r) => r.unregister()));
     }
     if (window.caches) {
       const keys = await caches.keys();
-      await Promise.all(keys.map(k => caches.delete(k)));
+      await Promise.all(keys.map((k) => caches.delete(k)));
     }
   } catch (e) {
     console.error("[hardRefresh]", e);

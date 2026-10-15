@@ -18,6 +18,7 @@ import { SCHEMA_VERSION } from "../data/constants.js";
    ficar marcado sem ter terminado).
    ============================================================ */
 
+// eslint-disable-next-line no-unused-vars
 const strip = ({ id, user, ...rest }) => JSON.stringify(rest);
 
 async function migrateBackups(user, report) {
@@ -29,8 +30,8 @@ async function migrateBackups(user, report) {
   }
   if (legacy.entries.length) {
     await dbPutBackups(legacy.entries);
-    const stored = new Map((await dbListBackups(user)).map(r => [r.id, r]));
-    const verified = legacy.entries.every(e => {
+    const stored = new Map((await dbListBackups(user)).map((r) => [r.id, r]));
+    const verified = legacy.entries.every((e) => {
       const b = stored.get(e.id);
       return !!b && strip(b) === strip(e);
     });
@@ -55,7 +56,7 @@ async function migrateAvatar(user, report) {
   }
   if (!existing) {
     await writeAvatar(inline, user);
-    if (await readAvatar(user) !== inline) {
+    if ((await readAvatar(user)) !== inline) {
       report.avatar = "unverified";
       return;
     }
@@ -77,13 +78,13 @@ export async function migrateLegacyStorage() {
     await migrateBackups(user, report);
   } catch (e) {
     report.ok = false;
-    report.backupsError = String(e && e.name || e);
+    report.backupsError = String((e && e.name) || e);
   }
   try {
     await migrateAvatar(user, report);
   } catch (e) {
     report.ok = false;
-    report.avatarError = String(e && e.name || e);
+    report.avatarError = String((e && e.name) || e);
   }
   if (typeof report.backups === "number" || report.avatar === "moved") {
     try {

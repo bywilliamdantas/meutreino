@@ -18,8 +18,8 @@ export async function listAutoBackups() {
   } catch (e) {}
   const legacy = readLegacyBackups(user).entries;
   if (legacy.length) {
-    const seen = new Set(rows.map(r => r.id));
-    legacy.forEach(l => {
+    const seen = new Set(rows.map((r) => r.id));
+    legacy.forEach((l) => {
       if (!seen.has(l.id)) rows.push(l);
     });
     rows = sortNewest(rows);
@@ -38,8 +38,8 @@ export async function refreshBackupInfo() {
 }
 
 export function hasMeaningfulData() {
-  if (totalDays() > 0 || store.data.body && store.data.body.length) return true;
-  return Object.values(store.data.workouts).some(w => (w.exercises || []).length > 0);
+  if (totalDays() > 0 || (store.data.body && store.data.body.length)) return true;
+  return Object.values(store.data.workouts).some((w) => (w.exercises || []).length > 0);
 }
 
 function reportFailure(e) {

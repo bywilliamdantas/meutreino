@@ -10,8 +10,8 @@ export function newRestKey() {
 
 export function initExIdCounter() {
   let max = 0;
-  Object.values(store.data.workouts).forEach(w => {
-    (w.exercises || []).forEach(ex => {
+  Object.values(store.data.workouts).forEach((w) => {
+    (w.exercises || []).forEach((ex) => {
       const n = parseInt(String(ex.id).replace("ex", ""), 10);
       if (!isNaN(n) && n > max) max = n;
     });
@@ -21,7 +21,7 @@ export function initExIdCounter() {
 
 export function initRestCounter() {
   let max = 0;
-  store.data.order.forEach(k => {
+  store.data.order.forEach((k) => {
     const m = /^REST(\d+)$/.exec(k);
     if (m) {
       const n = parseInt(m[1], 10);

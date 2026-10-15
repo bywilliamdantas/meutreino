@@ -76,7 +76,7 @@ export function renderLogin() {
     store.loginMode = null;
     applyMode();
   });
-  document.getElementById("loginModeLink").addEventListener("click", e => {
+  document.getElementById("loginModeLink").addEventListener("click", (e) => {
     e.preventDefault();
     store.loginMode = pinMode() ? "password" : "pin";
     applyMode();
@@ -104,10 +104,11 @@ export function renderLogin() {
     document.getElementById("loginPwToggle").innerHTML = show ? ICONS.eyeOff : ICONS.eye;
   });
   const helpLink = document.getElementById("loginHelpLink");
-  if (helpLink) helpLink.addEventListener("click", e => {
-    e.preventDefault();
-    showToast("Fale com seu treinador para criar seu acesso");
-  });
+  if (helpLink)
+    helpLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      showToast("Fale com seu treinador para criar seu acesso");
+    });
   if (!store.authBusy) (userInput.value ? (pinMode() ? pinInput : passInput) : userInput).focus();
 }
 

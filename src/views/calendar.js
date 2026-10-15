@@ -37,11 +37,11 @@ export function buildMonthCalendar(monthDate) {
     if (isFuture) {
       cells += `<div class="${cls}" aria-label="${escapeAttr(label)}"><span>${day}</span></div>`;
     } else {
-      cells += `<button class="${btnCls}"${toneAttr} data-role="calday" data-key="${key}" aria-label="${escapeAttr(label)}"><span>${day}</span>${badge}</button>`;
+      cells += `<button class="${btnCls}"${toneAttr} data-role="calday" data-key="${escapeAttr(key)}" aria-label="${escapeAttr(label)}"><span>${day}</span>${badge}</button>`;
     }
   }
   const totalCells = startWeekday + daysInMonth;
-  const trailing = (7 - totalCells % 7) % 7;
+  const trailing = (7 - (totalCells % 7)) % 7;
   for (let i = 0; i < trailing; i++) {
     cells += `<div class="cal-cell empty"></div>`;
   }
@@ -76,7 +76,7 @@ export function openDaySheet(dateKey, opts) {
     log = {};
     startedAt = Date.now();
   } else if (opts.sessionId) {
-    const sess = arr.find(s => s.id === opts.sessionId);
+    const sess = arr.find((s) => s.id === opts.sessionId);
     if (sess) {
       sessionId = sess.id;
       letter = sess.letter;
@@ -103,7 +103,7 @@ export function openDaySheet(dateKey, opts) {
   let meta = {},
     note = "";
   if (sessionId) {
-    const sess0 = arr.find(x => x.id === sessionId);
+    const sess0 = arr.find((x) => x.id === sessionId);
     if (sess0) {
       meta = JSON.parse(JSON.stringify(sess0.meta || {}));
       note = sess0.note || "";

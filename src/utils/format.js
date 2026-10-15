@@ -41,7 +41,7 @@ export function fmtDurationShort(ms) {
 export function fmtClock(totalSec) {
   const s = Math.max(0, Math.floor(totalSec));
   const h = Math.floor(s / 3600);
-  const m = Math.floor(s % 3600 / 60);
+  const m = Math.floor((s % 3600) / 60);
   const sec = s % 60;
   if (h > 0) return h + ":" + pad(m) + ":" + pad(sec);
   return pad(m) + ":" + pad(sec);

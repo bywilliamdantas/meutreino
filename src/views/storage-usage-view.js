@@ -2,7 +2,7 @@ import { refreshBackupInfo } from "../backup/auto-backup.js";
 import { store } from "../store.js";
 import { WARN_RATIO, fmtBytes, readStorageUsage } from "../storage/usage.js";
 
-const pct = r => Math.min(100, Math.round(r * 100));
+const pct = (r) => Math.min(100, Math.round(r * 100));
 
 function meter(label, o, extraCls) {
   const p = pct(o.ratio);
@@ -21,17 +21,27 @@ export function storageUsageHtml() {
   const alerts = [];
   if (u.local.ratio >= WARN_RATIO) {
     const p = pct(u.local.ratio);
-    alerts.push(u.level === "crit" ? `Armazenamento quase cheio (${p}% do limite do navegador). Exporte um backup agora: se encher, o app não consegue salvar novos treinos.` : `Seus dados já usam ${p}% do limite do navegador (~5 MB). Exporte um backup e fique de olho: se encher, o app não consegue salvar novos treinos.`);
+    alerts.push(
+      u.level === "crit"
+        ? `Armazenamento quase cheio (${p}% do limite do navegador). Exporte um backup agora: se encher, o app não consegue salvar novos treinos.`
+        : `Seus dados já usam ${p}% do limite do navegador (~5 MB). Exporte um backup e fique de olho: se encher, o app não consegue salvar novos treinos.`
+    );
   }
   if (u.origin && u.origin.ratio >= WARN_RATIO) {
     alerts.push(`O aparelho está com pouco espaço para o app (${pct(u.origin.ratio)}% da cota). Libere espaço no aparelho.`);
   }
   if (store.autoBackupError) {
-    alerts.push(store.autoBackupError === "quota" ? "Sem espaço para o backup automático: as cópias novas não estão sendo salvas." : "Não foi possível salvar o backup automático. Exporte um arquivo para garantir.");
+    alerts.push(
+      store.autoBackupError === "quota"
+        ? "Sem espaço para o backup automático: as cópias novas não estão sendo salvas."
+        : "Não foi possível salvar o backup automático. Exporte um arquivo para garantir."
+    );
   }
-  const alertHtml = alerts.map(a => `<div class="usage-alert ${u.level === "crit" || store.autoBackupError ? "crit" : "warn"}" role="alert">${a}</div>`).join("");
+  const alertHtml = alerts
+    .map((a) => `<div class="usage-alert ${u.level === "crit" || store.autoBackupError ? "crit" : "warn"}" role="alert">${a}</div>`)
+    .join("");
   const p = u.parts;
-  return `<div class="usage-card ${alerts.length ? u.level === "ok" ? "warn" : u.level : "ok"}" id="storageUsageCard">
+  return `<div class="usage-card ${alerts.length ? (u.level === "ok" ? "warn" : u.level) : "ok"}" id="storageUsageCard">
     <div class="usage-title">Espaço em uso</div>
     ${alertHtml}
     ${meter("Dados do app (limite do navegador)", u.local)}

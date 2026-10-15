@@ -1,7 +1,12 @@
+import { prefersReducedMotion } from "../utils/dom.js";
+
 // Confete discreto para recordes pessoais (respeita reduced-motion).
+// As cores vêm dos tokens (tokens.css) e são resolvidas pelo CSS na hora de pintar.
+export const CONFETTI_COLORS = ["var(--accent)", "var(--gold)", "var(--violet)", "var(--ok)", "var(--info)"];
+
 export function confetti() {
-  if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  const colors = ["#ff5a36", "#ffb020", "#7c5cfc", "#22c55e", "#2f8fff"];
+  if (prefersReducedMotion()) return;
+  const colors = CONFETTI_COLORS;
   const box = document.createElement("div");
   box.className = "confetti";
   for (let i = 0; i < 28; i++) {

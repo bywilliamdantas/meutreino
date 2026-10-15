@@ -5,6 +5,7 @@ import { ICONS } from "../../data/icons.js";
 import { exThumbHtml } from "../../exercises/exercise-visuals.js";
 import { findExercise, lastLoggedValue, restForExercise } from "../../exercises/exercises.js";
 import { persist } from "../../persistence.js";
+import { markSessionsDirty } from "../../storage/session-store.js";
 import { checkPR, exercisePRs, suggestNext } from "../../stats/prs.js";
 import { store } from "../../store.js";
 import { colorFor, toneVars } from "../../ui/helpers.js";
@@ -14,35 +15,49 @@ import { fmtClock, fmtDuration, fmtW, fromDisp, toDisp, todayKey, unit, weightSt
 import { newSessionId } from "../../utils/ids.js";
 import { isCardio, isWork, parseNum, roundToStep } from "../../utils/numbers.js";
 import { activeElapsedMs, syncWakeLock } from "../../workouts/active-session.js";
-import { computeSessionIntensity, sessionDurationMs, sessionHasData, sessionsFor, snapshotExercise, stampSnapshot } from "../../workouts/sessions.js";
-import { previousSetValues, shouldStartRest } from "../../workouts/rest-rules.js";
+import { computeSessionIntensity, sessionDurationMs, sessionHasData, sessionsFor, stampSnapshot } from "../../workouts/sessions.js";
+import { DEFAULT_SETS, previousSetValues, shouldStartRest } from "../../workouts/rest-rules.js";
 import { workoutLabel } from "../../workouts/workouts.js";
 import { render } from "../render.js";
 import { closeOverlay, renderOverlay } from "./overlay-manager.js";
 import { startRestTimer } from "./rest-timer.js";
 
+const HINT_KEY = "gym-hint-settype-dismissed";
+function hintDismissed() {
+  try {
+    return localStorage.getItem(HINT_KEY) === "1";
+  } catch (e) {
+    return false;
+  }
+}
+
 export function ensureSetsForExercise(log, exId, defaultSets) {
   if (!Array.isArray(log[exId])) {
-    const n = Math.max(1, parseInt(defaultSets, 10) || 1);
-    log[exId] = Array.from({
-      length: n
-    }, () => ({
-      weight: null,
-      reps: null,
-      done: false
-    }));
+    const n = Math.max(1, parseInt(defaultSets, 10) || DEFAULT_SETS);
+    log[exId] = Array.from(
+      {
+        length: n
+      },
+      () => ({
+        weight: null,
+        reps: null,
+        done: false
+      })
+    );
   }
   return log[exId];
 }
 
 export function ensureCardioSets(log, exId) {
   if (!Array.isArray(log[exId]) || log[exId].length === 0) {
-    log[exId] = [{
-      minutes: null,
-      done: false
-    }];
+    log[exId] = [
+      {
+        minutes: null,
+        done: false
+      }
+    ];
   }
-  log[exId].forEach(s => {
+  log[exId].forEach((s) => {
     if (!("minutes" in s)) s.minutes = null;
     if (!("done" in s)) s.done = false;
   });
@@ -55,30 +70,33 @@ export function ensureCardioSets(log, exId) {
      registrado, com a quantidade de séries salva — mudar o treino depois
      (séries, exercícios apagados/adicionados) não altera o histórico. */
 export function sessionExerciseList(w, log, sess, dateKey) {
-  const template = w && w.exercises || [];
+  const template = (w && w.exercises) || [];
   const frozen = !!(sess && sessionHasData(sess.log) && (sess.endedAt || dateKey < todayKey()));
-  if (!frozen) return {
-    list: template,
-    frozen: false
-  };
+  if (!frozen)
+    return {
+      list: template,
+      frozen: false
+    };
   const base = Array.isArray(sess.snapshot) && sess.snapshot.length ? sess.snapshot : template;
   const seen = new Set();
   const list = [];
-  base.forEach(ex => {
+  base.forEach((ex) => {
     if (Array.isArray(log[ex.id]) && log[ex.id].length && !seen.has(ex.id)) {
       seen.add(ex.id);
       list.push(ex);
     }
   });
-  Object.keys(log).forEach(id => {
+  Object.keys(log).forEach((id) => {
     if (seen.has(id) || !Array.isArray(log[id]) || !log[id].length) return;
-    const fromTemplate = template.find(e => e.id === id);
-    const isCardioLog = log[id].some(s => s && s.minutes != null);
-    list.push(fromTemplate || {
-      id,
-      name: "Exercício removido",
-      type: isCardioLog ? "cardio" : "strength"
-    });
+    const fromTemplate = template.find((e) => e.id === id);
+    const isCardioLog = log[id].some((s) => s && s.minutes != null);
+    list.push(
+      fromTemplate || {
+        id,
+        name: "Exercício removido",
+        type: isCardioLog ? "cardio" : "strength"
+      }
+    );
   });
   return {
     list,
@@ -99,7 +117,7 @@ export function ensureMeta(exId) {
 
 export function cleanMeta(meta) {
   const out = {};
-  Object.keys(meta || {}).forEach(id => {
+  Object.keys(meta || {}).forEach((id) => {
     const m = meta[id] || {};
     const note = (m.note || "").trim();
     const rpe = m.rpe != null && !isNaN(m.rpe) ? m.rpe : null;
@@ -162,7 +180,7 @@ export function setNumHtml(s, i) {
 export function refreshSetInputs(root, exid, setidx) {
   const set = store.overlay.log[exid] && store.overlay.log[exid][setidx];
   if (!set) return;
-  const q = f => root.querySelector(`[data-field="${f}"][data-exid="${exid}"][data-setidx="${setidx}"]`);
+  const q = (f) => root.querySelector(`[data-field="${f}"][data-exid="${exid}"][data-setidx="${setidx}"]`);
   const w = q("weight");
   if (w && set.weight != null) w.value = fmtW(set.weight);
   const r = q("reps");
@@ -171,14 +189,16 @@ export function refreshSetInputs(root, exid, setidx) {
   if (m && set.minutes != null) m.textContent = set.minutes;
 }
 
-
 // Modo foco: só o exercício atual fica aberto; os outros mostram o progresso (ex.: 2/4).
 function applyFocus(root, focusId) {
   const rows = [...root.querySelectorAll(".sheet-ex-row")];
   if (rows.length < 2 || !root.querySelector(".sheet-set")) return;
-  const isDone = r => { const s = [...r.querySelectorAll(".sheet-set")]; return s.length > 0 && s.every(x => x.classList.contains("done")); };
-  const cur = (focusId && rows.find(r => r.dataset.exid === focusId)) || rows.find(r => !isDone(r)) || rows[rows.length - 1];
-  rows.forEach(r => {
+  const isDone = (r) => {
+    const s = [...r.querySelectorAll(".sheet-set")];
+    return s.length > 0 && s.every((x) => x.classList.contains("done"));
+  };
+  const cur = (focusId && rows.find((r) => r.dataset.exid === focusId)) || rows.find((r) => !isDone(r)) || rows[rows.length - 1];
+  rows.forEach((r) => {
     r.classList.toggle("is-collapsed", r !== cur);
     const n = r.querySelector(".sheet-ex-name");
     if (n) n.dataset.progress = r.querySelectorAll(".sheet-set.done").length + "/" + r.querySelectorAll(".sheet-set").length;
@@ -186,13 +206,7 @@ function applyFocus(root, focusId) {
 }
 
 export function renderDayOverlay(root) {
-  const {
-    dateKey,
-    letter,
-    log,
-    startedAt,
-    mode
-  } = store.overlay;
+  const { dateKey, letter, log, startedAt, mode } = store.overlay;
   const [y, m, dd] = dateKey.split("-").map(Number);
   const d = new Date(y, m - 1, dd);
   const isToday = dateKey === todayKey();
@@ -203,7 +217,7 @@ export function renderDayOverlay(root) {
   const a = store.data.activeSession;
   const hasActiveHere = (a.state === "running" || a.state === "paused") && dateKey === todayKey() && a.letter === letter;
   const elapsed = hasActiveHere ? Math.floor(activeElapsedMs() / 1000) : Math.floor((Date.now() - startedAt) / 1000);
-  const sessObj = store.overlay.sessionId ? sessionsFor(dateKey).find(s => s.id === store.overlay.sessionId) : null;
+  const sessObj = store.overlay.sessionId ? sessionsFor(dateKey).find((s) => s.id === store.overlay.sessionId) : null;
   const shown = sessionExerciseList(w, log, sessObj && sessObj.letter === letter ? sessObj : null, dateKey);
   const dayEx = shown.list;
   store.overlay.frozen = shown.frozen;
@@ -212,18 +226,25 @@ export function renderDayOverlay(root) {
     exercises: dayEx
   };
   const hasExercises = !w.isRest && dayEx.length > 0;
-  const exercisesHtml = w.isRest ? `<div class="sheet-empty">Dia de descanso — nada para registrar.</div>` : dayEx.length ? `<div class="sheet-exercises">${dayEx.map((ex, i) => {
-    const linked = isLinkedNext(wv, i) || i > 0 && isLinkedNext(wv, i - 1);
-    if (isCardio(ex)) return renderCardioRow(ex, log, dateKey, linked);
-    return renderStrengthRow(ex, log, dateKey, linked);
-  }).join("")}</div>` : `<div class="empty-state">
+  const exercisesHtml = w.isRest
+    ? `<div class="sheet-empty">Dia de descanso — nada para registrar.</div>`
+    : dayEx.length
+      ? `<div class="sheet-exercises">${dayEx
+          .map((ex, i) => {
+            const linked = isLinkedNext(wv, i) || (i > 0 && isLinkedNext(wv, i - 1));
+            if (isCardio(ex)) return renderCardioRow(ex, log, dateKey, linked);
+            return renderStrengthRow(ex, log, dateKey, linked);
+          })
+          .join("")}</div>`
+      : `<div class="empty-state">
             <div class="empty-icon">${ICONS.dumbbell}</div>
             <p class="empty-title">Treino sem exercícios</p>
             <p class="empty-sub">Adicione exercícios na aba "Treinos" antes de registrar.</p>
           </div>`;
   let durationLabel = "—";
-  if (hasActiveHere) durationLabel = fmtClock(elapsed);else if (store.overlay.sessionId) {
-    const sess = sessionsFor(dateKey).find(s => s.id === store.overlay.sessionId);
+  if (hasActiveHere) durationLabel = fmtClock(elapsed);
+  else if (store.overlay.sessionId) {
+    const sess = sessionsFor(dateKey).find((s) => s.id === store.overlay.sessionId);
     const ms = sess ? sessionDurationMs(sess) : null;
     if (ms) durationLabel = fmtDuration(ms);
   }
@@ -233,45 +254,65 @@ export function renderDayOverlay(root) {
     <div class="ssh-top">
       <span class="ssh-badge" style="${toneVars(color)}">${w.isRest ? ICONS.moonSmall : letter}</span>
       <div class="ssh-titles">
-        <div class="ssh-name">${escapeHtml(w.name || workoutLabel(letter))}</div>
-        <div class="ssh-date">${isToday ? "Hoje" : escapeHtml(dateLabel)}${hasActiveHere ? ` · <span class="ssh-live">em andamento</span>` : ""}</div>
+        <div class="ssh-name" id="sheetTitle"><span class="sr-only">Registrar treino: </span>${escapeHtml(w.name || workoutLabel(letter))}</div>
+        <div class="ssh-date" id="sheetSubtitle">${isToday ? "Hoje" : escapeHtml(dateLabel)}${hasActiveHere ? ` · <span class="ssh-live">em andamento</span>` : ""}</div>
       </div>
       <button class="icon-btn" id="sheetClose" aria-label="fechar">${ICONS.close}</button>
     </div>
-    ${hasExercises ? `<div class="ssh-stats">
+    ${
+      hasExercises
+        ? `<div class="ssh-stats">
       <div class="ssh-stat"><span class="ssh-stat-num" id="sheetClockTime">${durationLabel}</span><span class="ssh-stat-label">duração</span></div>
       <div class="ssh-stat"><span class="ssh-stat-num">${dayEx.length}</span><span class="ssh-stat-label">exercício${dayEx.length === 1 ? "" : "s"}</span></div>
       <div class="ssh-stat"><span class="ssh-stat-num">${intensity || "—"}</span><span class="ssh-stat-label">intensidade</span></div>
-    </div>` : ""}
+    </div>`
+        : ""
+    }
   </div>`;
   let html = `<div class="sheet-backdrop" id="sheetBackdrop"></div>`;
-  html += `<div class="sheet" role="dialog" aria-modal="true" aria-label="Registrar treino" id="daySheet">
+  html += `<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle sheetSubtitle" id="daySheet">
     <div class="sheet-handle" id="sheetHandle"></div>
     ${sessionHeadHtml}
     <div class="sheet-chips">
-      ${store.data.order.map(k => {
-    const wk = store.data.workouts[k];
-    const label = wk?.isRest ? "Desc." : k;
-    const active = k === letter;
-    return `<button class="chip${active ? " on" : ""}" data-role="sheetletter" data-letter="${k}" aria-pressed="${active}"${active ? ` style="${toneVars(colorFor(k, store.data.order))}"` : ""}>${label}</button>`;
-  }).join("")}
+      ${store.data.order
+        .map((k) => {
+          const wk = store.data.workouts[k];
+          const label = wk?.isRest ? "Desc." : k;
+          const active = k === letter;
+          return `<button class="chip${active ? " on" : ""}" data-role="sheetletter" data-letter="${escapeAttr(k)}" aria-pressed="${active}"${active ? ` style="${toneVars(colorFor(k, store.data.order))}"` : ""}>${escapeHtml(label)}</button>`;
+        })
+        .join("")}
     </div>
-    ${hasExercises ? `<p class="sheet-hint">Toque no número da série para marcar aquecimento (A), drop set (D) ou até a falha (F). Aquecimento não entra nas estatísticas.</p>` : ""}
+    ${hasExercises && !hintDismissed() ? `<p class="sheet-hint" id="sheetHint"><span>Toque no número da série para marcar aquecimento (A), drop set (D) ou até a falha (F). Aquecimento não entra nas estatísticas.</span><button type="button" class="sheet-hint-dismiss" id="sheetHintDismiss">Entendi</button></p>` : ""}
     ${exercisesHtml}
-    ${hasExercises ? `<label class="sheet-note-wrap"><span>Observações do treino</span>
-      <textarea id="sessionNote" class="sheet-note-area" rows="2" placeholder="Sono, dor, energia…">${escapeHtml(store.overlay.note || "")}</textarea></label>` : ""}
+    ${
+      hasExercises
+        ? `<label class="sheet-note-wrap"><span>Observações do treino</span>
+      <textarea id="sessionNote" class="sheet-note-area" rows="2" placeholder="Sono, dor, energia…">${escapeHtml(store.overlay.note || "")}</textarea></label>`
+        : ""
+    }
     <div class="sheet-actions">
       ${mode === "new" ? `<button class="cta-btn" id="sheetCreate">Salvar treino</button>` : ""}
     </div>
   </div>`;
   root.innerHTML = html;
   applyFocus(root);
-  root.querySelectorAll(".sheet-ex-name").forEach(n => n.addEventListener("click", e => {
-    if (e.target.closest("a")) return;
-    applyFocus(root, n.closest(".sheet-ex-row").dataset.exid);
-  }));
+  root.querySelectorAll(".sheet-ex-name").forEach((n) =>
+    n.addEventListener("click", (e) => {
+      if (e.target.closest("a")) return;
+      applyFocus(root, n.closest(".sheet-ex-row").dataset.exid);
+    })
+  );
   document.getElementById("sheetBackdrop").addEventListener("click", closeOverlay);
   document.getElementById("sheetClose").addEventListener("click", closeOverlay);
+  const hintBtn = document.getElementById("sheetHintDismiss");
+  if (hintBtn)
+    hintBtn.addEventListener("click", () => {
+      try {
+        localStorage.setItem(HINT_KEY, "1");
+      } catch (e) {}
+      document.getElementById("sheetHint")?.remove();
+    });
   if (store.sheetClockInterval) {
     clearInterval(store.sheetClockInterval);
     store.sheetClockInterval = null;
@@ -285,7 +326,7 @@ export function renderDayOverlay(root) {
       clockEl.textContent = fmtClock(Math.floor(activeElapsedMs() / 1000));
     }, 1000);
   }
-  document.querySelectorAll('[data-role="sheetletter"]').forEach(b => {
+  document.querySelectorAll('[data-role="sheetletter"]').forEach((b) => {
     b.addEventListener("click", () => {
       if (store.overlay.frozen && b.dataset.letter !== store.overlay.letter) {
         haptic(6);
@@ -297,7 +338,7 @@ export function renderDayOverlay(root) {
       renderOverlay();
     });
   });
-  root.querySelectorAll(".step-btn").forEach(btn => {
+  root.querySelectorAll(".step-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       haptic(6);
       const exid = btn.dataset.exid;
@@ -324,7 +365,7 @@ export function renderDayOverlay(root) {
       autoSaveOverlay();
     });
   });
-  root.querySelectorAll('input.step-value.input[data-field="weight"]').forEach(inp => {
+  root.querySelectorAll('input.step-value.input[data-field="weight"]').forEach((inp) => {
     inp.addEventListener("input", () => {
       const exid = inp.dataset.exid;
       const setidx = parseInt(inp.dataset.setidx, 10);
@@ -342,7 +383,7 @@ export function renderDayOverlay(root) {
       inp.value = wv == null ? "" : fmtW(wv);
     });
   });
-  root.querySelectorAll('input.step-value.input[data-field="reps"]').forEach(inp => {
+  root.querySelectorAll('input.step-value.input[data-field="reps"]').forEach((inp) => {
     inp.addEventListener("input", () => {
       const exid = inp.dataset.exid;
       const setidx = parseInt(inp.dataset.setidx, 10);
@@ -360,7 +401,7 @@ export function renderDayOverlay(root) {
       inp.value = r == null ? "" : String(r);
     });
   });
-  root.querySelectorAll('[data-role="settype"]').forEach(btn => {
+  root.querySelectorAll('[data-role="settype"]').forEach((btn) => {
     btn.addEventListener("click", () => {
       const exid = btn.dataset.exid;
       const setidx = parseInt(btn.dataset.setidx, 10);
@@ -369,18 +410,19 @@ export function renderDayOverlay(root) {
       const set = sets[setidx];
       const cur = SET_TYPES.indexOf(set.type || "normal");
       const next = SET_TYPES[(cur + 1) % SET_TYPES.length];
-      if (next === "normal") delete set.type;else set.type = next;
+      if (next === "normal") delete set.type;
+      else set.type = next;
       if (next === "warm") set.pr = false;
       haptic(6);
       btn.innerHTML = setNumHtml(set, setidx);
       const row = btn.closest(".sheet-set");
-      SET_TYPES.forEach(t => row.classList.remove("t-" + t));
+      SET_TYPES.forEach((t) => row.classList.remove("t-" + t));
       row.classList.add("t-" + next);
       btn.setAttribute("aria-label", `série ${setidx + 1}, tipo ${SET_TYPE_NAME[next]}. Toque para mudar`);
       autoSaveOverlay();
     });
   });
-  root.querySelectorAll('[data-role="toggleSet"]').forEach(btn => {
+  root.querySelectorAll('[data-role="toggleSet"]').forEach((btn) => {
     btn.addEventListener("click", () => {
       const exid = btn.dataset.exid;
       const setidx = parseInt(btn.dataset.setidx, 10);
@@ -406,7 +448,10 @@ export function renderDayOverlay(root) {
       {
         const exRow = btn.closest(".sheet-ex-row");
         const all = [...exRow.querySelectorAll(".sheet-set")];
-        if (set.done && all.every(x => x.classList.contains("done"))) { applyFocus(root, exid); setTimeout(() => applyFocus(root), 700); } else applyFocus(root, exid);
+        if (set.done && all.every((x) => x.classList.contains("done"))) {
+          applyFocus(root, exid);
+          setTimeout(() => applyFocus(root), 700);
+        } else applyFocus(root, exid);
       }
       const numBtn = row.querySelector('[data-role="settype"]');
       if (numBtn) numBtn.innerHTML = setNumHtml(set, setidx);
@@ -421,7 +466,7 @@ export function renderDayOverlay(root) {
         }
         if (ex && ex.ss) {
           if (!prMsg) showToast("Superset — vá para o próximo exercício");
-        } else if (shouldStartRest(ex, sets, setidx)) {
+        } else if (shouldStartRest(ex, sets, setidx, !!root.querySelector(".sheet-set:not(.done)"))) {
           startRestTimer(exid);
         }
       } else {
@@ -429,7 +474,7 @@ export function renderDayOverlay(root) {
       }
     });
   });
-  root.querySelectorAll('[data-role="repeatprev"]').forEach(btn => {
+  root.querySelectorAll('[data-role="repeatprev"]').forEach((btn) => {
     btn.addEventListener("click", () => {
       const exid = btn.dataset.exid;
       const setidx = parseInt(btn.dataset.setidx, 10);
@@ -445,7 +490,7 @@ export function renderDayOverlay(root) {
       autoSaveOverlay();
     });
   });
-  root.querySelectorAll('[data-role="applysuggest"]').forEach(btn => {
+  root.querySelectorAll('[data-role="applysuggest"]').forEach((btn) => {
     btn.addEventListener("click", () => {
       const exid = btn.dataset.exid;
       const ex = findExercise(exid);
@@ -463,64 +508,63 @@ export function renderDayOverlay(root) {
       showToast("Sugestão aplicada");
     });
   });
-  root.querySelectorAll('[data-role="exrpe"]').forEach(sel => {
+  root.querySelectorAll('[data-role="exrpe"]').forEach((sel) => {
     sel.addEventListener("change", () => {
       const v = sel.value ? parseInt(sel.value, 10) : null;
       ensureMeta(sel.dataset.exid).rpe = v;
       autoSaveOverlay();
     });
   });
-  root.querySelectorAll('[data-role="exnote"]').forEach(inp => {
+  root.querySelectorAll('[data-role="exnote"]').forEach((inp) => {
     inp.addEventListener("input", () => {
       ensureMeta(inp.dataset.exid).note = inp.value;
       scheduleAutoSave();
     });
   });
   const noteEl = document.getElementById("sessionNote");
-  if (noteEl) noteEl.addEventListener("input", () => {
-    store.overlay.note = noteEl.value;
-    scheduleAutoSave();
-  });
-  const createBtn = document.getElementById("sheetCreate");
-  if (createBtn) createBtn.addEventListener("click", () => {
-    const {
-      dateKey: dk,
-      letter: lt,
-      log: lg,
-      startedAt: st,
-      mode: md
-    } = store.overlay;
-    if (md !== "new") return;
-    const arr = sessionsFor(dk).slice();
-    const cleanLog = JSON.parse(JSON.stringify(lg));
-    Object.keys(cleanLog).forEach(exId => {
-      cleanLog[exId] = (cleanLog[exId] || []).filter(s => s.minutes != null || s.weight != null || s.reps != null || s.done);
+  if (noteEl)
+    noteEl.addEventListener("input", () => {
+      store.overlay.note = noteEl.value;
+      scheduleAutoSave();
     });
-    const meta = cleanMeta(store.overlay.meta);
-    const note = (store.overlay.note || "").trim();
-    let sess = arr.find(s => s.letter === lt && !s.endedAt);
-    if (sess) {
-      sess.log = cleanLog;
-    } else {
-      sess = {
-        id: newSessionId(),
-        letter: lt,
-        log: cleanLog,
-        startedAt: st,
-        endedAt: null
-      };
-      arr.push(sess);
-    }
-    if (Object.keys(meta).length) sess.meta = meta;else delete sess.meta;
-    if (note) sess.note = note;else delete sess.note;
-    stampSnapshot(sess);
-    store.data.sessions[dk] = arr;
-    haptic([10, 40, 10]);
-    closeOverlay();
-    render();
-    persist();
-    showToast("Séries salvas");
-  });
+  const createBtn = document.getElementById("sheetCreate");
+  if (createBtn)
+    createBtn.addEventListener("click", () => {
+      const { dateKey: dk, letter: lt, log: lg, startedAt: st, mode: md } = store.overlay;
+      if (md !== "new") return;
+      const arr = sessionsFor(dk).slice();
+      const cleanLog = JSON.parse(JSON.stringify(lg));
+      Object.keys(cleanLog).forEach((exId) => {
+        cleanLog[exId] = (cleanLog[exId] || []).filter((s) => s.minutes != null || s.weight != null || s.reps != null || s.done);
+      });
+      const meta = cleanMeta(store.overlay.meta);
+      const note = (store.overlay.note || "").trim();
+      let sess = arr.find((s) => s.letter === lt && !s.endedAt);
+      if (sess) {
+        sess.log = cleanLog;
+      } else {
+        sess = {
+          id: newSessionId(),
+          letter: lt,
+          log: cleanLog,
+          startedAt: st,
+          endedAt: null
+        };
+        arr.push(sess);
+      }
+      if (Object.keys(meta).length) sess.meta = meta;
+      else delete sess.meta;
+      if (note) sess.note = note;
+      else delete sess.note;
+      stampSnapshot(sess);
+      store.data.sessions[dk] = arr;
+      markSessionsDirty(dk);
+      haptic([10, 40, 10]);
+      closeOverlay();
+      render();
+      persist();
+      showToast("Séries salvas");
+    });
   enableSheetDrag(root.querySelector("#daySheet"), root.querySelector("#sheetHandle"));
   syncWakeLock();
 }
@@ -528,15 +572,9 @@ export function renderDayOverlay(root) {
 export function autoSaveOverlay() {
   if (!store.overlay || store.overlay.type !== "day") return;
   if (store.overlay.mode === "new") return;
-  const {
-    dateKey,
-    sessionId,
-    letter,
-    log,
-    startedAt
-  } = store.overlay;
+  const { dateKey, sessionId, letter, log, startedAt } = store.overlay;
   const arr = sessionsFor(dateKey).slice();
-  let sess = arr.find(s => s.id === sessionId);
+  let sess = arr.find((s) => s.id === sessionId);
   if (!sess) {
     sess = {
       id: sessionId || newSessionId(),
@@ -550,21 +588,26 @@ export function autoSaveOverlay() {
   sess.letter = letter;
   sess.log = JSON.parse(JSON.stringify(log));
   const meta = cleanMeta(store.overlay.meta);
-  if (Object.keys(meta).length) sess.meta = meta;else delete sess.meta;
+  if (Object.keys(meta).length) sess.meta = meta;
+  else delete sess.meta;
   const note = (store.overlay.note || "").trim();
-  if (note) sess.note = note;else delete sess.note;
+  if (note) sess.note = note;
+  else delete sess.note;
   if (!sess.startedAt) sess.startedAt = startedAt;
   stampSnapshot(sess);
   store.data.sessions[dateKey] = arr;
+  markSessionsDirty(dateKey);
   persist();
 }
 
 export function exExtrasHtml(ex) {
-  const meta = store.overlay.meta && store.overlay.meta[ex.id] || {};
-  const rpeOpts = `<option value="">RPE</option>` + [10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map(n => `<option value="${n}" ${meta.rpe === n ? "selected" : ""}>RPE ${n}</option>`).join("");
+  const meta = (store.overlay.meta && store.overlay.meta[ex.id]) || {};
+  const rpeOpts =
+    `<option value="">RPE</option>` +
+    [10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map((n) => `<option value="${n}" ${meta.rpe === n ? "selected" : ""}>RPE ${n}</option>`).join("");
   return `<div class="sheet-ex-extra">
-    <select class="sheet-rpe" data-role="exrpe" data-exid="${ex.id}" aria-label="Esforço percebido (RPE)">${rpeOpts}</select>
-    <input class="sheet-note" type="text" data-role="exnote" data-exid="${ex.id}" value="${escapeAttr(meta.note || "")}" placeholder="Observação…" aria-label="Observação do exercício" autocomplete="off">
+    <select class="sheet-rpe" data-role="exrpe" data-exid="${escapeAttr(ex.id)}" aria-label="Esforço percebido (RPE)">${rpeOpts}</select>
+    <input class="sheet-note" type="text" data-role="exnote" data-exid="${escapeAttr(ex.id)}" value="${escapeAttr(meta.note || "")}" placeholder="Observação…" aria-label="Observação do exercício" autocomplete="off">
   </div>`;
 }
 
@@ -587,40 +630,44 @@ export function renderStrengthRow(ex, log, dateKey, linked) {
   const sug = suggestNext(ex, dateKey);
   const pr = exercisePRs(ex.id);
   const workSets = sets.filter(isWork);
-  const allDone = workSets.length > 0 && workSets.every(s => s.done);
-  const lastLabel = last ? `última vez: ${last.weight != null ? fmtW(last.weight) + " " + unit() : "—"} × ${last.reps != null ? last.reps : "—"}` : "primeira vez registrando";
+  const allDone = workSets.length > 0 && workSets.every((s) => s.done);
+  const lastLabel = last
+    ? `última vez: ${last.weight != null ? fmtW(last.weight) + " " + unit() : "—"} × ${last.reps != null ? last.reps : "—"}`
+    : "primeira vez registrando";
   const restLabel = ex.ss ? "sem descanso (superset)" : `descanso ${restSec}s`;
-  return `<div class="sheet-ex-row${linked ? " linked" : ""}" data-exid="${ex.id}">
+  return `<div class="sheet-ex-row${linked ? " linked" : ""}" data-exid="${escapeAttr(ex.id)}">
     ${exNameHtml(ex, "Exercício", linked, allDone)}
     <div class="sheet-ex-last">${lastLabel} · ${restLabel}${pr ? ` · recorde ${fmtW(pr.maxWeight)} ${unit()}` : ""}</div>
-    ${sug ? `<button type="button" class="suggest-chip" data-role="applysuggest" data-exid="${ex.id}"><span>${escapeHtml(sug.text)}</span><b>aplicar</b></button>` : ""}
-    <div class="sheet-sets" data-exid="${ex.id}">
-      ${sets.map((s, i) => {
-    const initialWeight = s.weight != null ? s.weight : def.weight;
-    const initialReps = s.reps != null ? s.reps : def.reps;
-    const t = SET_TYPES.includes(s.type) ? s.type : "normal";
-    return `<div class="sheet-set ${s.done ? "done" : ""} t-${t}" data-setidx="${i}">
-          <button type="button" class="sheet-set-num" data-role="settype" data-exid="${ex.id}" data-setidx="${i}" aria-label="série ${i + 1}, tipo ${SET_TYPE_NAME[t]}. Toque para mudar">${setNumHtml(s, i)}</button>
+    ${sug ? `<button type="button" class="suggest-chip" data-role="applysuggest" data-exid="${escapeAttr(ex.id)}"><span>${escapeHtml(sug.text)}</span><b>aplicar</b></button>` : ""}
+    <div class="sheet-sets" data-exid="${escapeAttr(ex.id)}">
+      ${sets
+        .map((s, i) => {
+          const initialWeight = s.weight != null ? s.weight : def.weight;
+          const initialReps = s.reps != null ? s.reps : def.reps;
+          const t = SET_TYPES.includes(s.type) ? s.type : "normal";
+          return `<div class="sheet-set ${s.done ? "done" : ""} t-${t}" data-setidx="${i}">
+          <button type="button" class="sheet-set-num" data-role="settype" data-exid="${escapeAttr(ex.id)}" data-setidx="${i}" aria-label="série ${i + 1}, tipo ${SET_TYPE_NAME[t]}. Toque para mudar">${setNumHtml(s, i)}</button>
           <div class="step-group">
-            <button class="step-btn" data-role="wminus" data-exid="${ex.id}" data-setidx="${i}" aria-label="diminuir peso">−</button>
+            <button class="step-btn" data-role="wminus" data-exid="${escapeAttr(ex.id)}" data-setidx="${i}" aria-label="diminuir peso">−</button>
             <input class="step-value input" type="text" inputmode="decimal"
-              data-field="weight" data-exid="${ex.id}" data-setidx="${i}"
+              data-field="weight" data-exid="${escapeAttr(ex.id)}" data-setidx="${i}"
               value="${escapeAttr(fmtW(initialWeight))}"
               aria-label="peso em ${unit()}">
             <span class="step-unit">${unit()}</span>
-            <button class="step-btn" data-role="wplus" data-exid="${ex.id}" data-setidx="${i}" aria-label="aumentar peso">+</button>
+            <button class="step-btn" data-role="wplus" data-exid="${escapeAttr(ex.id)}" data-setidx="${i}" aria-label="aumentar peso">+</button>
           </div>
           <div class="step-group">
-            <button class="step-btn" data-role="rminus" data-exid="${ex.id}" data-setidx="${i}" aria-label="diminuir reps">−</button>
+            <button class="step-btn" data-role="rminus" data-exid="${escapeAttr(ex.id)}" data-setidx="${i}" aria-label="diminuir reps">−</button>
             <input class="step-value input" type="text" inputmode="numeric"
-              data-field="reps" data-exid="${ex.id}" data-setidx="${i}"
+              data-field="reps" data-exid="${escapeAttr(ex.id)}" data-setidx="${i}"
               value="${escapeAttr(initialReps != null && initialReps !== "" ? String(initialReps) : "")}"
               aria-label="repetições">
-            <button class="step-btn" data-role="rplus" data-exid="${ex.id}" data-setidx="${i}" aria-label="aumentar reps">+</button>
+            <button class="step-btn" data-role="rplus" data-exid="${escapeAttr(ex.id)}" data-setidx="${i}" aria-label="aumentar reps">+</button>
           </div>
-          <button class="sheet-set-check" data-role="toggleSet" data-exid="${ex.id}" data-setidx="${i}" aria-label="marcar série ${i + 1}">${ICONS.checkSm}</button>
-        </div>${i > 0 ? `<button type="button" class="set-repeat" data-role="repeatprev" data-exid="${ex.id}" data-setidx="${i}" aria-label="repetir peso e reps da série ${i}">${ICONS.refresh}<span>repetir anterior</span></button>` : ""}`;
-  }).join("")}
+          <button class="sheet-set-check" data-role="toggleSet" data-exid="${escapeAttr(ex.id)}" data-setidx="${i}" aria-label="marcar série ${i + 1}">${ICONS.check}</button>
+        </div>${i > 0 ? `<button type="button" class="set-repeat" data-role="repeatprev" data-exid="${escapeAttr(ex.id)}" data-setidx="${i}" aria-label="repetir peso e reps da série ${i}">${ICONS.refresh}<span>repetir anterior</span></button>` : ""}`;
+        })
+        .join("")}
     </div>
     ${exExtrasHtml(ex)}
   </div>`;
@@ -630,25 +677,27 @@ export function renderCardioRow(ex, log, dateKey, linked) {
   const last = lastLoggedValue(ex.id, dateKey);
   const sets = ensureCardioSets(log, ex.id);
   const def = setDefaults(ex, dateKey);
-  const allDone = sets.length > 0 && sets.every(s => s.done);
+  const allDone = sets.length > 0 && sets.every((s) => s.done);
   const lastLabel = last && last.minutes != null ? `última vez: ${last.minutes} min` : "primeira vez registrando";
-  return `<div class="sheet-ex-row${linked ? " linked" : ""}" data-exid="${ex.id}">
+  return `<div class="sheet-ex-row${linked ? " linked" : ""}" data-exid="${escapeAttr(ex.id)}">
     ${exNameHtml(ex, "Cardio", linked, allDone)}
     <div class="sheet-ex-last">${lastLabel}</div>
-    <div class="sheet-sets" data-exid="${ex.id}">
-      ${sets.map((s, i) => {
-    const initialMin = s.minutes != null ? s.minutes : def.minutes;
-    return `<div class="sheet-set ${s.done ? "done" : ""}" data-setidx="${i}">
+    <div class="sheet-sets" data-exid="${escapeAttr(ex.id)}">
+      ${sets
+        .map((s, i) => {
+          const initialMin = s.minutes != null ? s.minutes : def.minutes;
+          return `<div class="sheet-set ${s.done ? "done" : ""}" data-setidx="${i}">
           <div class="sheet-set-num">${i + 1}</div>
           <div class="step-group">
-            <button class="step-btn" data-role="mminus" data-exid="${ex.id}" data-setidx="${i}" aria-label="diminuir minutos">−</button>
-            <div class="step-value" data-field="minutes" data-exid="${ex.id}" data-setidx="${i}">${initialMin}</div>
+            <button class="step-btn" data-role="mminus" data-exid="${escapeAttr(ex.id)}" data-setidx="${i}" aria-label="diminuir minutos">−</button>
+            <div class="step-value" data-field="minutes" data-exid="${escapeAttr(ex.id)}" data-setidx="${i}">${initialMin}</div>
             <span class="step-unit">min</span>
-            <button class="step-btn" data-role="mplus" data-exid="${ex.id}" data-setidx="${i}" aria-label="aumentar minutos">+</button>
+            <button class="step-btn" data-role="mplus" data-exid="${escapeAttr(ex.id)}" data-setidx="${i}" aria-label="aumentar minutos">+</button>
           </div>
-          <button class="sheet-set-check" data-role="toggleSet" data-exid="${ex.id}" data-setidx="${i}" aria-label="marcar ${i + 1}">${ICONS.checkSm}</button>
+          <button class="sheet-set-check" data-role="toggleSet" data-exid="${escapeAttr(ex.id)}" data-setidx="${i}" aria-label="marcar ${i + 1}">${ICONS.check}</button>
         </div>`;
-  }).join("")}
+        })
+        .join("")}
     </div>
     ${exExtrasHtml(ex)}
   </div>`;
@@ -659,14 +708,14 @@ export function enableSheetDrag(sheetEl, handleEl) {
   let startY = 0,
     curY = 0,
     dragging = false;
-  handleEl.addEventListener("pointerdown", e => {
+  handleEl.addEventListener("pointerdown", (e) => {
     dragging = true;
     startY = e.clientY;
     curY = 0;
     sheetEl.classList.add("dragging");
     handleEl.setPointerCapture(e.pointerId);
   });
-  handleEl.addEventListener("pointermove", e => {
+  handleEl.addEventListener("pointermove", (e) => {
     if (!dragging) return;
     curY = Math.max(0, e.clientY - startY);
     sheetEl.style.transform = `translateY(${curY}px)`;
@@ -691,7 +740,9 @@ export async function undoToday() {
   const arr = sessionsFor(dateKey);
   if (arr.length === 0) return;
   arr.pop();
-  if (arr.length === 0) delete store.data.sessions[dateKey];else store.data.sessions[dateKey] = arr;
+  if (arr.length === 0) delete store.data.sessions[dateKey];
+  else store.data.sessions[dateKey] = arr;
+  markSessionsDirty(dateKey);
   const a = store.data.activeSession;
   if (a.startedDate === dateKey && a.state !== "idle") {
     a.state = "idle";

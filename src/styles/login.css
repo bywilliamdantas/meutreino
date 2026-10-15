@@ -1,150 +1,280 @@
-  /* ---------- tela de login (fiel ao mockup) ---------- */
-  /* Tela de login fixa: ocupa exatamente a área visível, sem rolagem. */
-  html:has(.login-wrap), body:has(.login-wrap){
-    height:100vh; height:100dvh; min-height:0;
-    overflow:hidden; overscroll-behavior:none;
-  }
-  .login-wrap{
-    position:fixed; top:0; bottom:0; left:0; right:0;
-    width:100%; max-width:430px; margin:0 auto;
-    height:100vh; height:100dvh;
-    z-index:5;
-    display:flex; flex-direction:column;
-    padding:calc(env(safe-area-inset-top) + clamp(16px, 5vh, 48px)) 24px calc(env(safe-area-inset-bottom) + 20px);
-    text-align:center;
-    overflow:hidden;
-    touch-action:manipulation;
-    color:#fff;
-  }
-  .login-wrap::before{
-    content:"";
-    position:absolute; inset:0;
-    background:
-      radial-gradient(circle at 15% 25%, rgba(255,255,255,0.05), transparent 40%),
-      radial-gradient(circle at 85% 75%, rgba(255,255,255,0.04), transparent 40%);
-    pointer-events:none;
-  }
-  .login-logo{
-    width:104px; height:104px; margin:0 auto 22px;
-    border-radius:28px;
-    overflow:hidden;
-    position:relative;
-    z-index:1;
-    box-shadow:0 20px 40px rgba(255,90,54,0.35), 0 0 0 1px rgba(255,255,255,0.08);
-  }
-  .login-logo svg{ width:100%; height:100%; display:block; }
-  .login-logo img{ width:100%; height:100%; object-fit:cover; display:block; }
-  .login-title{
-    font-size:31px; font-weight:800; letter-spacing:-0.02em;
-    margin:0 0 6px; position:relative; z-index:1;
-    color:#fff; font-family:var(--font-display);
-  }
-  .login-title .accent{ color:var(--accent); }
-  .login-sub{
-    font-size:14.5px; color:rgba(255,255,255,0.65);
-    margin:0 0 32px; position:relative; z-index:1;
-    font-weight:500;
-  }
-  .login-form{
-    display:flex; flex-direction:column; gap:12px;
-    text-align:left;
-    position:relative; z-index:1;
-    flex:1;
-  }
-  .login-input-wrap{
-    display:flex; align-items:center; gap:12px;
-    background:rgba(255,255,255,0.06);
-    border:1px solid rgba(255,255,255,0.12);
-    border-radius:999px;
-    padding:0 20px;
-    height:54px;
-    transition:border-color .15s ease, background .15s ease;
-  }
-  .login-input-wrap:focus-within{
-    border-color:rgba(255,255,255,0.35);
-    background:rgba(255,255,255,0.09);
-  }
-  .login-input-wrap .li-icon{
-    color:rgba(255,255,255,0.55); display:flex; flex-shrink:0;
-  }
-  .login-input-wrap input{
-    flex:1; min-width:0;
-    background:none; border:none; outline:none; box-shadow:none;
-    font-size:15.5px; color:#fff; font-family:inherit;
-    padding:0;
-  }
-  .login-input-wrap input::placeholder{ color:rgba(255,255,255,0.42); }
-  .login-input-wrap .pw-toggle{
-    background:none; border:none; color:rgba(255,255,255,0.55);
-    padding:6px; display:flex; -webkit-appearance:none; cursor:pointer;
-  }
+/* ---------- tela de login (fiel ao mockup) ---------- */
+/* Tela de login fixa: ocupa exatamente a área visível, sem rolagem. */
+html:has(.login-wrap),
+body:has(.login-wrap) {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+.login-wrap {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  max-width: 430px;
+  margin: 0 auto;
+  height: 100vh;
+  height: 100dvh;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  padding: calc(env(safe-area-inset-top) + clamp(16px, 5vh, 48px)) 24px calc(env(safe-area-inset-bottom) + 20px);
+  text-align: center;
+  overflow: hidden;
+  touch-action: manipulation;
+  color: var(--white);
+}
+.login-wrap::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 15% 25%, rgba(255, 255, 255, 0.05), transparent 40%),
+    radial-gradient(circle at 85% 75%, rgba(255, 255, 255, 0.04), transparent 40%);
+  pointer-events: none;
+}
+.login-logo {
+  width: 104px;
+  height: 104px;
+  margin: 0 auto 22px;
+  border-radius: 28px;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+  box-shadow:
+    0 20px 40px rgba(255, 90, 54, 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+.login-logo svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.login-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.login-title {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0 0 6px;
+  position: relative;
+  z-index: 1;
+  color: var(--white);
+  font-family: var(--font-display);
+}
+.login-title .accent {
+  color: var(--accent);
+}
+.login-sub {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.65);
+  margin: 0 0 32px;
+  position: relative;
+  z-index: 1;
+  font-weight: 500;
+}
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: left;
+  position: relative;
+  z-index: 1;
+  flex: 1;
+}
+.login-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  padding: 0 20px;
+  height: 54px;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+.login-input-wrap:focus-within {
+  border-color: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.09);
+}
+.login-input-wrap .li-icon {
+  color: rgba(255, 255, 255, 0.55);
+  display: flex;
+  flex-shrink: 0;
+}
+.login-input-wrap input {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  outline: none;
+  box-shadow: none;
+  font-size: 15px;
+  color: var(--white);
+  font-family: inherit;
+  padding: 0;
+}
+.login-input-wrap input::placeholder {
+  color: rgba(255, 255, 255, 0.42);
+}
+.login-input-wrap .pw-toggle {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.55);
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--tap);
+  min-height: var(--tap);
+  margin-right: -6px; /* o ícone fica onde estava; a área de toque cresce */
+  -webkit-appearance: none;
+  cursor: pointer;
+}
 
-  .login-keep-row{
-    display:flex; align-items:center; gap:12px;
-    margin:10px 4px 4px;
-    font-size:14px; color:rgba(255,255,255,0.75);
-    font-weight:500;
-  }
-  .switch.lg{ width:52px; height:30px; }
-  .switch.lg .slider::before{ width:24px; height:24px; left:3px; top:3px; }
-  .switch.lg input:checked + .slider::before{ transform:translateX(22px); }
+.login-keep-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 10px 4px 4px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.75);
+  font-weight: 500;
+}
+.switch.lg {
+  width: 52px;
+  height: 30px;
+}
+.switch.lg .slider::before {
+  width: 24px;
+  height: 24px;
+  left: 3px;
+  top: 3px;
+}
+.switch.lg input:checked + .slider::before {
+  transform: translateX(22px);
+}
 
-  .login-error{
-    color:#ffb3ab; background:rgba(255,59,48,0.15); border:1px solid rgba(255,59,48,0.3);
-    border-radius:12px; padding:11px 14px; font-size:13px; margin-top:4px;
-    text-align:center;
-  }
+.login-error {
+  color: var(--danger-on-ink-soft);
+  background: rgba(255, 59, 48, 0.15);
+  border: 1px solid rgba(255, 59, 48, 0.3);
+  border-radius: 12px;
+  padding: 11px 14px;
+  font-size: 13px;
+  margin-top: 4px;
+  text-align: center;
+}
 
-  .login-footer{
-    margin-top:auto; padding-top:28px; padding-bottom:0;
-    font-size:13px; color:rgba(255,255,255,0.55);
-    text-align:center; position:relative; z-index:1;
-  }
-  .login-copyright{
-    position:relative; z-index:1;
-    padding-top:14px;
-    font-size:11px; letter-spacing:0.02em; line-height:1.4;
-    color:rgba(255,255,255,0.38);
-    text-align:center;
-  }
-  .login-footer a{
-    color:var(--accent); font-weight:700; text-decoration:none;
-  }
+.login-footer {
+  margin-top: auto;
+  padding-top: 28px;
+  padding-bottom: 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.55);
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+.login-copyright {
+  position: relative;
+  z-index: 1;
+  padding-top: 14px;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.38);
+  text-align: center;
+}
+.login-footer a {
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+}
 
-  .cta-btn{
-    width:100%;
-    background:linear-gradient(135deg,#ff8862,#ff5a36);
-    color:#fff; border:none;
-    height:54px; border-radius:16px;
-    font-size:16px; font-weight:800;
-    letter-spacing:0.01em;
-    -webkit-appearance:none;
-    box-shadow:0 12px 24px rgba(255,90,54,0.32);
-    transition:transform .12s var(--ease), opacity .15s ease;
-    display:flex; align-items:center; justify-content:center; gap:8px;
-    cursor:pointer;
-    margin-top:14px;
+.cta-btn {
+  width: 100%;
+  background: linear-gradient(135deg, var(--accent-2), var(--accent));
+  color: var(--accent-on);
+  border: none;
+  height: 54px;
+  border-radius: 16px;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  -webkit-appearance: none;
+  box-shadow: 0 12px 24px rgba(255, 90, 54, 0.32);
+  transition:
+    transform 0.12s var(--ease),
+    opacity 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  margin-top: 14px;
+}
+.cta-btn:active {
+  transform: scale(0.98);
+}
+.cta-btn:disabled {
+  opacity: 0.6;
+}
+
+@media (max-height: 700px) {
+  .login-wrap .login-logo {
+    width: 84px;
+    height: 84px;
+    margin-bottom: 14px;
+    border-radius: 22px;
   }
-  .cta-btn:active{ transform:scale(0.98); }
-  .cta-btn:disabled{ opacity:0.6; }
-
-
-  @media (max-height:700px){
-    .login-wrap .login-logo{ width:84px; height:84px; margin-bottom:14px; border-radius:22px; }
-    .login-wrap .login-title{ font-size:28px; }
-    .login-wrap .login-sub{ margin-bottom:18px; }
-    .login-wrap .login-input-wrap{ height:50px; }
-    .login-wrap .cta-btn{ height:50px; margin-top:8px; }
-    .login-wrap .login-footer{ padding-top:12px; }
+  .login-wrap .login-title {
+    font-size: 28px;
   }
-
-  /* a barra de abas não existe na tela de login (fica vazia, só com o fundo) */
-  .tabbar:empty, body:has(.login-wrap) .tabbar{ display:none !important; }
-
-  /* PIN: alternância senha/PIN */
-  .login-form .hidden{ display:none !important; }
-  .login-mode-link{
-    align-self:flex-end; font-size:13px; font-weight:700;
-    color:var(--accent); text-decoration:none; margin:-4px 2px 2px;
+  .login-wrap .login-sub {
+    margin-bottom: 18px;
   }
-  #loginPin{ letter-spacing:0.5em; font-variant-numeric:tabular-nums; }
+  .login-wrap .login-input-wrap {
+    height: 50px;
+  }
+  .login-wrap .cta-btn {
+    height: 50px;
+    margin-top: 8px;
+  }
+  .login-wrap .login-footer {
+    padding-top: 12px;
+  }
+}
+
+/* a barra de abas não existe na tela de login (fica vazia, só com o fundo) */
+.tabbar:empty,
+body:has(.login-wrap) .tabbar {
+  display: none !important;
+}
+
+/* PIN: alternância senha/PIN */
+.login-form .hidden {
+  display: none !important;
+}
+.login-mode-link {
+  align-self: flex-end;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+  text-decoration: none;
+  margin: -4px 2px 2px;
+}
+#loginPin {
+  letter-spacing: 0.5em;
+  font-variant-numeric: tabular-nums;
+}

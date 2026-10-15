@@ -17,10 +17,10 @@ export function renderPinOverlay(root) {
   const user = store.currentUser;
   const has = hasPin(user.username);
   root.innerHTML = `<div class="sheet-backdrop" id="sheetBackdrop"></div>
-  <div class="sheet" role="dialog" aria-modal="true" aria-label="PIN de acesso">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
     <div class="sheet-handle"></div>
     <div class="sheet-header">
-      <div class="sheet-date">${has ? "Alterar PIN" : "Criar PIN de acesso"}</div>
+      <div class="sheet-date" id="sheetTitle">${has ? "Alterar PIN" : "Criar PIN de acesso"}</div>
       <button class="icon-btn" id="sheetClose" aria-label="fechar">${ICONS.close}</button>
     </div>
     <p class="pin-note">O PIN de 4 dígitos vale só neste aparelho e deixa o login mais rápido. Sua senha continua funcionando e é a forma de recuperar o acesso se você esquecer o PIN.</p>
@@ -39,13 +39,15 @@ export function renderPinOverlay(root) {
       ${has ? `<button class="footer-btn danger" id="pinRemove">Remover PIN</button>` : ""}
     </div>
   </div>`;
-  const $ = id => document.getElementById(id);
+  const $ = (id) => document.getElementById(id);
   $("sheetBackdrop").addEventListener("click", closeOverlay);
   $("sheetClose").addEventListener("click", closeOverlay);
-  ["pinNew", "pinNew2"].forEach(id => $(id).addEventListener("input", e => {
-    e.target.value = e.target.value.replace(/\D/g, "").slice(0, 4);
-  }));
-  const err = msg => {
+  ["pinNew", "pinNew2"].forEach((id) =>
+    $(id).addEventListener("input", (e) => {
+      e.target.value = e.target.value.replace(/\D/g, "").slice(0, 4);
+    })
+  );
+  const err = (msg) => {
     $("pinError").textContent = msg;
     $("pinSave").disabled = false;
   };
@@ -72,11 +74,16 @@ export function renderPinOverlay(root) {
     showToast(has ? "PIN alterado" : "PIN ativado");
   });
   const rm = $("pinRemove");
-  if (rm) rm.addEventListener("click", () => {
-    openConfirm("Remover o PIN? Você volta a entrar só com a senha.", () => {
-      removePin(user.username);
-      render();
-      showToast("PIN removido");
-    }, { yesLabel: "Remover", noLabel: "Cancelar", yesStyle: "danger" });
-  });
+  if (rm)
+    rm.addEventListener("click", () => {
+      openConfirm(
+        "Remover o PIN? Você volta a entrar só com a senha.",
+        () => {
+          removePin(user.username);
+          render();
+          showToast("PIN removido");
+        },
+        { yesLabel: "Remover", noLabel: "Cancelar", yesStyle: "danger" }
+      );
+    });
 }

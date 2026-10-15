@@ -1,40 +1,95 @@
-  /* ---------- tabbar ---------- */
-  .screen{ padding-bottom: calc(var(--s4) + 78px + env(safe-area-inset-bottom)); }
-  .tab-panel{ animation: tabFadeIn .18s ease; }
-  @keyframes tabFadeIn{ from{ opacity:0; transform:translateY(4px); } to{ opacity:1; transform:translateY(0); } }
-  .tab-title{
-    font-size:27px; font-weight:800; letter-spacing:-0.02em;
-    margin:2px 4px 16px;
-    font-family:var(--font-display);
+/* ---------- tabbar ---------- */
+.screen {
+  padding-bottom: calc(var(--s4) + 78px + env(safe-area-inset-bottom));
+}
+.tab-panel {
+  animation: tabFadeIn 0.18s ease;
+}
+@keyframes tabFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
   }
-  .spaced-title{ margin-top:24px; }
-  .tabbar{
-    position:fixed; left:0; right:0; bottom:0; z-index:80;
-    max-width:430px; margin:0 auto;
-    display:flex; justify-content:space-between;
-    -webkit-backdrop-filter:blur(20px); backdrop-filter:blur(20px);
-    border-top:1px solid var(--card-border);
-    border-radius:22px 22px 0 0;
-    padding:8px var(--s3) calc(6px + env(safe-area-inset-bottom));
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
-  .tab-btn{
-    flex:1; display:flex; flex-direction:column; align-items:center; gap:3px;
-    background:none; border:none; color:var(--text-muted);
-    padding:4px 2px; -webkit-appearance:none;
-  }
-  .tab-btn-icon{
-    display:flex; align-items:center; justify-content:center;
-    width:38px; height:26px; border-radius:14px;
-    transition:background .18s var(--ease), color .18s var(--ease);
-  }
-  .tab-btn-label{ font-size:10px; font-weight:600; }
-  .tab-btn.active{ color:var(--accent); }
-  .tab-btn.active .tab-btn-icon{ background:var(--accent-soft); }
+}
+.tab-title {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 2px 4px 16px;
+  font-family: var(--font-display);
+}
+.spaced-title {
+  margin-top: 24px;
+}
+.tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 80;
+  max-width: 430px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid var(--card-border);
+  border-radius: 22px 22px 0 0;
+  padding: 8px var(--s3) calc(6px + env(safe-area-inset-bottom));
+}
+.tab-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  padding: 4px 2px;
+  -webkit-appearance: none;
+}
+.tab-btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 26px;
+  border-radius: 14px;
+  transition:
+    background 0.18s var(--ease),
+    color 0.18s var(--ease);
+}
+.tab-btn-label {
+  font-size: 12px;
+  font-weight: 600;
+}
+.tab-btn.active {
+  color: var(--accent-text);
+}
+.tab-btn.active .tab-btn-icon {
+  background: var(--accent-soft);
+}
 
-  @media (prefers-reduced-motion: reduce){
-    *, *::before, *::after{
-      animation-duration:0.01ms !important;
-      animation-iteration-count:1 !important;
-      transition-duration:0.01ms !important;
-    }
+/* Movimento reduzido: TODA animação/transição do app (inclusive as de ::before/::after e as futuras)
+     termina na hora, sem rolagem suave; o confete nem aparece (e confetti.js já nem o cria).
+     O count-up da Home e a vibração também checam isso em JS (utils/dom.js → prefersReducedMotion). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+    scroll-behavior: auto !important;
   }
+  .confetti {
+    display: none;
+  }
+}

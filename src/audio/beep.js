@@ -42,7 +42,7 @@ export function initAudioUnlock() {
     if (ctx && ctx.state === "running") return;
     unlockAudio();
   };
-  ["touchend", "pointerup", "click", "keydown"].forEach(ev => document.addEventListener(ev, onGesture, { capture: true, passive: true }));
+  ["touchend", "pointerup", "click", "keydown"].forEach((ev) => document.addEventListener(ev, onGesture, { capture: true, passive: true }));
 }
 
 function tone() {
@@ -70,7 +70,10 @@ export function playBeep() {
       return true;
     }
     const p = ctx.resume();
-    if (p && p.then) p.then(() => { if (ctx.state === "running") tone(); }).catch(() => {});
+    if (p && p.then)
+      p.then(() => {
+        if (ctx.state === "running") tone();
+      }).catch(() => {});
   } catch (e) {}
   return false;
 }

@@ -6,18 +6,15 @@ export function resizeImageFile(file, maxSize) {
       const img = new Image();
       img.onerror = () => reject(new Error("decode failed"));
       img.onload = () => {
-        let {
-          width,
-          height
-        } = img;
+        let { width, height } = img;
         if (width > height) {
           if (width > maxSize) {
-            height = Math.round(height * maxSize / width);
+            height = Math.round((height * maxSize) / width);
             width = maxSize;
           }
         } else {
           if (height > maxSize) {
-            width = Math.round(width * maxSize / height);
+            width = Math.round((width * maxSize) / height);
             height = maxSize;
           }
         }
