@@ -2,13 +2,13 @@
   "users": [
     {
       "username": "william",
-      "name": "William Dantas",
+      "name": "William",
       "salt": "f85763b203bd",
       "hash": "811adc66c903761ea64bc02409adfe9e861a37e76cbace4b124f5980e6e41d3d"
     },
     {
       "username": "mariana",
-      "name": "Mariana Silva",
+      "name": "Mariana",
       "salt": "68fe5e1e5c95",
       "hash": "d2cfbfa40dc5791dbf1824b34c892d943fb81d2ae057089f6aec6b05e28e3c1d"
     }

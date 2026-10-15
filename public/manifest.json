@@ -2,6 +2,7 @@
   "name": "Meus Treinos",
   "short_name": "Meus Treinos",
   "description": "Organize seus treinos A/B/C e acompanhe o ciclo na academia.",
+  "id": "./",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
