@@ -17,13 +17,14 @@ import { colorFor, toneVars } from "../../ui/helpers.js";
 import { showToast } from "../../ui/toast.js";
 import { escapeAttr, escapeHtml, haptic } from "../../utils/dom.js";
 import { startActiveSession } from "../../workouts/active-session.js";
-import { workoutLabel } from "../../workouts/workouts.js";
+import { nextWorkoutLetter, workoutLabel } from "../../workouts/workouts.js";
 import { openDaySheet } from "../calendar.js";
 import { render } from "../render.js";
 import { closeOverlay } from "./overlay-manager.js";
 
 export function renderPickerOverlay(root) {
   const { dateKey } = store.overlay;
+  const recommended = nextWorkoutLetter();
   root.innerHTML = `<div class="sheet-backdrop" id="sheetBackdrop"></div>
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
     <div class="sheet-handle"></div>
@@ -39,6 +40,7 @@ export function renderPickerOverlay(root) {
           return `<button class="sheet-picker-item" data-role="pickletter" data-letter="${escapeAttr(k)}">
           <div class="spi-chip" style="${toneVars(colorFor(k, store.data.order))}">${isRest ? ICONS.moonSmall : k}</div>
           <div class="spi-name">${escapeHtml(wk?.name || workoutLabel(k))}</div>
+          ${!isRest && k === recommended ? `<span class="spi-tag">Recomendado</span>` : ""}
         </button>`;
         })
         .join("")}

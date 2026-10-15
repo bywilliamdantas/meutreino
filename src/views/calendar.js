@@ -70,7 +70,19 @@ export function openDaySheet(dateKey, opts) {
   const a = store.data.activeSession;
   const hasActive = a.state === "running" || a.state === "paused";
   let sessionId, letter, log, startedAt;
-  if (opts.mode === "new") {
+  // Treino em andamento hoje: "Detalhes" abre o treino ativo, não a última sessão já finalizada do dia.
+  const openActive = hasActive && dateKey === todayKey() && !opts.mode && !opts.sessionId ? arr.find((s) => s.letter === a.letter && !s.endedAt) : null;
+  if (hasActive && dateKey === todayKey() && !opts.mode && !opts.sessionId && !openActive) {
+    sessionId = null;
+    letter = a.letter;
+    log = {};
+    startedAt = Date.now();
+  } else if (openActive) {
+    sessionId = openActive.id;
+    letter = openActive.letter;
+    log = JSON.parse(JSON.stringify(openActive.log || {}));
+    startedAt = openActive.startedAt || Date.now();
+  } else if (opts.mode === "new") {
     sessionId = null;
     letter = opts.letter || (hasActive && dateKey === todayKey() ? a.letter : nextWorkoutLetter());
     log = {};

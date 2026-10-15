@@ -31,7 +31,7 @@ import {
 } from "./views/overlays/overlay-manager.js";
 import { render } from "./views/render.js";
 import { cancelActiveSession, endActiveSession, pauseActiveSession, startActiveSession, syncWakeLock } from "./workouts/active-session.js";
-import { currentWeeklyGoal, sessionsFor } from "./workouts/sessions.js";
+import { currentWeeklyGoal, isRestLetter, sessionsFor } from "./workouts/sessions.js";
 import { MAX_WEEKLY_GOAL, MIN_WEEKLY_GOAL } from "./workouts/weekly-goal.js";
 import { nextAvailableLetter, nextWorkoutLetter, workoutLabel } from "./workouts/workouts.js";
 
@@ -48,7 +48,9 @@ export function attachHandlers() {
       haptic(6);
       const dateKey = todayKey();
       const arr = sessionsFor(dateKey);
-      if (arr.length >= 2) {
+      const act = store.data.activeSession;
+      const hasActive = act.state === "running" || act.state === "paused";
+      if (arr.length >= 2 && !hasActive) {
         openDaySessionsSheet(dateKey);
       } else {
         openDaySheet(dateKey);
@@ -72,7 +74,17 @@ export function attachHandlers() {
         letter = a.letter;
       } else {
         const arr = sessionsFor(todayKey());
-        letter = arr.length ? arr[arr.length - 1].letter : nextWorkoutLetter();
+        const unfinished = arr.find((s) => !s.endedAt && !isRestLetter(s.letter));
+        if (unfinished) {
+          letter = unfinished.letter;
+        } else if (arr.length) {
+          // Já houve treino hoje: escolha livre entre os treinos (o recomendado vem destacado).
+          haptic(6);
+          openWorkoutPicker(todayKey());
+          return;
+        } else {
+          letter = nextWorkoutLetter();
+        }
       }
       if (!letter) return;
       startActiveSession(letter);

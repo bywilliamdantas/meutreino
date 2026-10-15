@@ -1,7 +1,8 @@
 import { MUSCLE_GROUPS } from "../data/muscle-groups.js";
 import { store } from "../store.js";
 import { isCardio, parseNum } from "../utils/numbers.js";
-import { isRestLetter, lastNonRestSessionEntry } from "./sessions.js";
+import { nextInCycle } from "./cycle.js";
+import { isRestLetter, sessionsFor } from "./sessions.js";
 
 export function workoutLabel(key) {
   const w = store.data.workouts[key];
@@ -37,11 +38,20 @@ export function estimateWorkoutMs(w) {
 export function nextWorkoutLetter() {
   const order = store.data.order.filter((k) => !isRestLetter(k));
   if (!order.length) return store.data.order[0];
-  const last = lastNonRestSessionEntry();
-  if (!last) return order[0];
-  const idx = order.indexOf(last.letter);
-  if (idx === -1) return order[0];
-  return order[(idx + 1) % order.length];
+  return nextInCycle(order, performedLetters());
+}
+
+/* Letras das sessões não-descanso, da mais antiga para a mais nova. */
+function performedLetters() {
+  const out = [];
+  Object.keys(store.data.sessions)
+    .sort()
+    .forEach((k) => {
+      sessionsFor(k).forEach((s) => {
+        if (s.letter && !isRestLetter(s.letter)) out.push(s.letter);
+      });
+    });
+  return out;
 }
 
 export function nextAvailableLetter() {

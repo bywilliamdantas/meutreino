@@ -1417,6 +1417,14 @@ div.sheet-set-num {
   flex: 1;
   min-width: 0;
 }
+.sheet-picker-item .spi-tag {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent-text);
+  flex-shrink: 0;
+}
 
 .hidden {
   display: none !important;
