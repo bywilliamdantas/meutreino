@@ -12,6 +12,7 @@ import { closePerfil, goTab, openPerfil } from "./router.js";
 import { store } from "./store.js";
 import { applyTheme } from "./theme.js";
 import { showToast } from "./ui/toast.js";
+import { attachSwipe } from "./ui/swipe.js";
 import { applyWaitingUpdate, checkForUpdate, hardRefreshApp } from "./update/sw-update.js";
 import { haptic, safeUrl } from "./utils/dom.js";
 import { todayKey } from "./utils/format.js";
@@ -306,9 +307,82 @@ export function attachHandlers() {
       else store.exMoreOpen.delete(el.dataset.exid);
     });
   });
+  attachSwipe(document);
+  const openWorkoutEditor = (key) => {
+    if (!store.data.workouts[key]) return;
+    haptic(6);
+    store.treinosEditKey = key;
+    store.treinosView = "edit";
+    render();
+    const scroller = document.getElementById("app");
+    if (scroller) scroller.scrollTop = 0;
+  };
+  const deleteWorkout = async (key) => {
+    const wk = store.data.workouts[key];
+    if (!wk) return;
+    if (store.data.order.length <= 1) {
+      showToast("Mantenha pelo menos um treino");
+      return;
+    }
+    const a = store.data.activeSession;
+    if (a && (a.state === "running" || a.state === "paused") && a.letter === key) {
+      showToast("Finalize o treino em andamento antes de excluir");
+      return;
+    }
+    const idx = store.data.order.indexOf(key);
+    const label = wk.isRest ? "Descanso" : `Treino ${key}`;
+    store.data.order = store.data.order.filter((l) => l !== key);
+    delete store.data.workouts[key];
+    if (store.treinosEditKey === key) {
+      store.treinosEditKey = null;
+      store.treinosView = "list";
+    }
+    render();
+    await persist();
+    showToast(`${label} removido`, {
+      label: "Desfazer",
+      fn: async () => {
+        if (store.data.workouts[key]) return;
+        store.data.workouts[key] = wk;
+        store.data.order.splice(Math.min(idx, store.data.order.length), 0, key);
+        render();
+        await persist();
+        showToast("Restaurado");
+      }
+    });
+  };
+  document.querySelectorAll('[data-role="swipeedit"]').forEach((el) => {
+    el.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      openWorkoutEditor(el.dataset.letter);
+    });
+  });
+  document.querySelectorAll('[data-role="swipedelete"]').forEach((el) => {
+    el.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      haptic(10);
+      deleteWorkout(el.dataset.letter);
+    });
+  });
+  document.querySelectorAll('[data-role="startworkout"]').forEach((el) => {
+    el.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      const a = store.data.activeSession;
+      if (a && (a.state === "running" || a.state === "paused")) {
+        showToast("Já existe um treino em andamento");
+        return;
+      }
+      const key = el.dataset.letter;
+      if (!store.data.workouts[key]) return;
+      haptic(8);
+      startActiveSession(key);
+    });
+  });
   document.querySelectorAll('[data-role="openworkout"]').forEach((el) => {
     const open = () => {
       if (store.treinosReorder) return;
+      const row = el.closest(".wl-swipe");
+      if (row && (row.dataset.justSwiped || (row.dataset.state && row.dataset.state !== "none"))) return;
       haptic(6);
       store.treinosEditKey = el.dataset.letter;
       store.treinosView = "edit";
@@ -339,28 +413,7 @@ export function attachHandlers() {
     });
   });
   document.querySelectorAll('[data-role="delworkout"]').forEach((el) => {
-    el.addEventListener("click", async () => {
-      const key = el.dataset.letter;
-      const wk = store.data.workouts[key];
-      if (!wk) return;
-      const idx = store.data.order.indexOf(key);
-      const label = wk.isRest ? "Descanso" : `Treino ${key}`;
-      store.data.order = store.data.order.filter((l) => l !== key);
-      delete store.data.workouts[key];
-      render();
-      await persist();
-      showToast(`${label} removido`, {
-        label: "Desfazer",
-        fn: async () => {
-          if (store.data.workouts[key]) return;
-          store.data.workouts[key] = wk;
-          store.data.order.splice(Math.min(idx, store.data.order.length), 0, key);
-          render();
-          await persist();
-          showToast("Restaurado");
-        }
-      });
-    });
+    el.addEventListener("click", () => deleteWorkout(el.dataset.letter));
   });
   document.querySelectorAll('[data-role="dupworkout"]').forEach((el) => {
     el.addEventListener("click", async () => {

@@ -1,11 +1,12 @@
 import { backupOffer, BACKUP_EVERY_OPTIONS, normalizeBackupEvery, workoutsSinceBackup } from "../backup/backup-reminder.js";
+import { forEachLoggedSet } from "../stats/stats.js";
 import { storageStatusText } from "../backup/storage-status.js";
 import { REST_COLOR } from "../config.js";
 import { APP_VERSION, MONTH_NAMES_FULL, WEEKDAY_FULL } from "../data/constants.js";
 import { ICONS } from "../data/icons.js";
 import { attachHandlers } from "../event-handlers.js";
 import { exThumbHtml } from "../exercises/exercise-visuals.js";
-import { daysSince, exerciseHistory, groupOptionsHtml, isCustomExerciseName } from "../exercises/exercises.js";
+import { daysSince, exerciseHistory, groupOptionsHtml, isCustomExerciseName, muscleGroupOf } from "../exercises/exercises.js";
 import { heroMuscleSvg } from "../icons-svg.js";
 import { store } from "../store.js";
 import { getThemePref } from "../theme.js";
@@ -42,6 +43,22 @@ import { renderTabBar } from "./tabbar-view.js";
 /* ============================================================
    RENDER PRINCIPAL
    ============================================================ */
+/* Grupos musculares únicos de um treino (sem "Outros"), na ordem dos exercícios. */
+function sameMonthKey(dk, y, m) {
+  const [ky, km] = String(dk).split("-").map(Number);
+  return ky === y && km === m;
+}
+
+export function workoutGroups(w) {
+  const out = [];
+  if (!w || w.isRest || !Array.isArray(w.exercises)) return out;
+  w.exercises.forEach((ex) => {
+    const g = muscleGroupOf(ex && ex.name, ex);
+    if (g && g !== "Outros" && !out.includes(g)) out.push(g);
+  });
+  return out;
+}
+
 export function render() {
   if (!store.currentUser) {
     renderLogin();
@@ -110,7 +127,7 @@ export function render() {
         : hasActive
           ? "toque em Detalhes para registrar"
           : heroW.exercises && heroW.exercises.length
-            ? "pronto para começar?"
+            ? workoutGroups(heroW).map(escapeHtml).join(" · ") || "pronto para começar?"
             : "adicione exercícios para começar";
   const heroEmpty = !hasActive && todayCount === 0 && !heroW.isRest && !(heroW.exercises && heroW.exercises.length);
   let heroActionsHtml;
@@ -140,10 +157,20 @@ export function render() {
          <button type="button" class="hero-v2-chip" id="addSecondBtn">${ICONS.plus} Novo</button>
        </div>`
       : "";
+  const heroExNames = !hasActive && todayCount === 0 && Array.isArray(heroW.exercises) ? heroW.exercises.map((e) => e && e.name).filter(Boolean) : [];
+  const heroChipsHtml = heroExNames.length
+    ? `<div class="hero-v2-chips">${heroExNames
+        .slice(0, 3)
+        .map((n) => `<span class="hero-ex-chip">${escapeHtml(n)}</span>`)
+        .join("")}${heroExNames.length > 3 ? `<span class="hero-ex-chip">+${heroExNames.length - 3}</span>` : ""}</div>`
+    : "";
+  const heroEstMs = !hasActive && todayCount === 0 ? estimateWorkoutMs(heroW) : 0;
+  const heroEstHtml = heroEstMs ? `<span class="hero-v2-est">${ICONS.timer} ~${Math.round(heroEstMs / 60000)} min</span>` : "";
   const heroHtml = `<div class="card hero-card-v2" id="heroCard">
     <div class="hero-muscle">${heroMuscleSvg()}</div>
     <div class="hero-v2-top">
       <span class="hero-v2-badge">${eyebrowText}</span>
+      ${heroEstHtml}
       <div class="hero-clock hidden" id="heroClock">
         ${ICONS.timer}
         <span class="clock-time" id="heroClockTime">00:00</span>
@@ -152,6 +179,7 @@ export function render() {
     <div class="hero-v2-body">
       <div class="hero-v2-name">${escapeHtml(heroW.name || workoutLabel(heroKey))}</div>
       <div class="hero-v2-sub">${heroSub}</div>
+      ${heroChipsHtml}
     </div>
     ${heroActionsHtml}
     ${heroSecondaryRowHtml}
@@ -164,13 +192,13 @@ export function render() {
     </div>
     <div class="stat-card-v3 week">
       <span class="stat-mini">${ICONS.calendarSmall}</span>
-      <span class="stat-num" data-count="${thisWeek}">0</span>
-      <span class="stat-label">de ${weeklyGoal} esta semana</span>
+      <span class="stat-num"><span data-count="${thisWeek}">0</span><span class="stat-of">/${weeklyGoal}</span></span>
+      <span class="stat-label">nesta semana</span>
     </div>
     <div class="stat-card-v3 month">
-      <span class="stat-mini">${ICONS.chart}</span>
+      <span class="stat-mini">${ICONS.trophy}</span>
       <span class="stat-num" data-count="${total}">0</span>
-      <span class="stat-label">no mês</span>
+      <span class="stat-label">${total === 1 ? "treino no mês" : "treinos no mês"}</span>
     </div>
   </div>`;
   const hour = now.getHours();
@@ -179,8 +207,8 @@ export function render() {
   const firstName = (userDisplayName() || "Treinador").split(" ")[0];
   const greetHtml = `<div class="greet-row">
     <div>
-      <div class="greet-hello">${greetWord} <span class="accent">${escapeHtml(firstName)}</span></div>
       <div class="greet-date">${dateLabel}</div>
+      <div class="greet-hello">${greetWord} ${escapeHtml(firstName)}</div>
     </div>
     <div class="greet-actions">
       <button type="button" class="greet-bell" id="greetBellBtn" aria-label="Lembretes">${ICONS.bell}</button>
@@ -193,7 +221,7 @@ export function render() {
   weekStart.setDate(now.getDate() - wOffset);
   weekStart.setHours(0, 0, 0, 0);
   let weekDotsHtml = `<div class="card week-dots-card">
-    <p class="section-title">Essa semana</p>
+    <div class="week-dots-head"><p class="section-title">Esta semana</p><span class="week-goal-pill">meta ${weeklyGoal}×</span></div>
     <div class="week-dots">`;
   for (let i = 0; i < 7; i++) {
     const d = new Date(weekStart);
@@ -204,9 +232,13 @@ export function render() {
     const restOnly = !done && dArr.length > 0 && dArr.every((s) => isRestLetter(s.letter));
     const isToday = dk === todayKey();
     const idx = store.data.settings.weekStartsMonday ? (i + 1) % 7 : i;
+    const doneEntry = done ? dArr.filter((s) => !isRestLetter(s.letter)).pop() : null;
+    const doneLetter = doneEntry && doneEntry.letter;
+    const dotStyle = doneLetter && store.data.workouts[doneLetter] ? ` style="${toneVars(colorFor(doneLetter, store.data.order))}"` : "";
+    const dotInner = done ? escapeHtml(doneLetter || "✓") : restOnly ? ICONS.moonSmall : isToday ? String(d.getDate()) : "";
     weekDotsHtml += `<div class="week-dot-col">
+      <span class="week-dot ${done ? "done" : ""} ${restOnly ? "rest" : ""} ${isToday ? "today" : ""}"${dotStyle}>${dotInner}</span>
       <span class="week-dot-label">${weekDayShort[idx]}</span>
-      <span class="week-dot ${done ? "done" : ""} ${restOnly ? "rest" : ""} ${isToday ? "today" : ""}">${done ? ICONS.checkSm : restOnly ? ICONS.moonSmall : ""}</span>
     </div>`;
   }
   weekDotsHtml += `</div></div>`;
@@ -311,55 +343,102 @@ export function render() {
     if (!cats.includes(store.treinosFilter)) store.treinosFilter = "all";
     const filterChipsHtml =
       cats.length > 1
-        ? `<div class="wf-chips">
-      <button type="button" class="wf-chip ${store.treinosFilter === "all" ? "active" : ""}" data-role="wfilter" data-cat="all">Todos</button>
-      ${cats.map((c) => `<button type="button" class="wf-chip ${store.treinosFilter === c ? "active" : ""}" data-role="wfilter" data-cat="${escapeAttr(c)}">${escapeHtml(c)}</button>`).join("")}
+        ? `<div class="wf-seg" role="tablist" aria-label="Filtrar treinos">
+      <button type="button" role="tab" aria-selected="${store.treinosFilter === "all"}" class="wf-chip ${store.treinosFilter === "all" ? "active" : ""}" data-role="wfilter" data-cat="all">Todos</button>
+      ${cats.map((c) => `<button type="button" role="tab" aria-selected="${store.treinosFilter === c}" class="wf-chip ${store.treinosFilter === c ? "active" : ""}" data-role="wfilter" data-cat="${escapeAttr(c)}">${escapeHtml(c)}</button>`).join("")}
     </div>`
         : "";
     const lastDoneLetter = todayArr.length ? todayArr[todayArr.length - 1].letter : null;
     const reordering = !!store.treinosReorder && store.data.order.length > 1;
-    workoutsHtml =
-      filterChipsHtml +
-      (store.data.order.length > 1
-        ? `<div class="wl-toolbar"><button type="button" class="wl-toolbar-btn${reordering ? " active" : ""}" id="reorderToggleBtn" aria-pressed="${reordering}">${reordering ? `${ICONS.check} Concluir` : "Reordenar"}</button></div>`
-        : "");
+    const canStart = !hasActive;
+    const canDelete = store.data.order.length > 1;
+    workoutsHtml = filterChipsHtml;
     store.data.order.forEach((key, idx) => {
       const w = store.data.workouts[key];
       const cat = categoryForWorkout(w);
       if (store.treinosFilter !== "all" && cat !== store.treinosFilter) return;
       const color = colorFor(key, store.data.order);
       const estMs = estimateWorkoutMs(w);
+      const nEx = w.exercises.length;
       const metaTxt = w.isRest
-        ? "Dia de descanso"
-        : `${estMs ? fmtDuration(estMs) + " · " : ""}${w.exercises.length} exercício${w.exercises.length === 1 ? "" : "s"}`;
+        ? "Dia de recuperação no ciclo"
+        : `${nEx} exercício${nEx === 1 ? "" : "s"}${estMs ? ` · ~${Math.round(estMs / 60000)} min` : ""}`;
+      const groups = workoutGroups(w);
+      const tagsHtml = groups.length ? `<span class="wl-tags">${groups.map((g) => `<span class="wl-tag">${escapeHtml(g)}</span>`).join("")}</span>` : "";
       const doneToday = key === lastDoneLetter;
-      workoutsHtml += `<div class="workout-list-card${reordering ? " reordering" : ""}" data-role="openworkout" data-letter="${escapeAttr(key)}" role="button" tabindex="0">
-        <span class="wl-icon" style="${toneVars(color, "22")}">${w.isRest ? ICONS.moonSmall : ICONS.dumbbell}</span>
-        <span class="wl-info">
-          <span class="wl-name">${escapeHtml(w.name)}</span>
-          <span class="wl-meta">${metaTxt}</span>
-        </span>
-        ${
-          reordering
-            ? `<span class="wl-reorder">
+      const isNext = !w.isRest && key === next && !doneToday;
+      let sideHtml = "";
+      if (reordering) {
+        sideHtml = `<span class="wl-reorder">
           <button type="button" class="reorder-btn" data-role="moveup" data-letter="${escapeAttr(key)}" ${idx === 0 ? "disabled" : ""} aria-label="mover para cima">${ICONS.up}</button>
           <button type="button" class="reorder-btn" data-role="movedown" data-letter="${escapeAttr(key)}" ${idx === store.data.order.length - 1 ? "disabled" : ""} aria-label="mover para baixo">${ICONS.down}</button>
-        </span>`
+        </span>`;
+      } else if (doneToday) {
+        sideHtml = `<span class="wl-side"><span class="wl-check">${ICONS.checkSm}</span></span>`;
+      } else if (!w.isRest && canStart && nEx) {
+        sideHtml = `<span class="wl-side">${isNext ? `<span class="wl-next">Próximo</span>` : ""}<button type="button" class="wl-play ${isNext ? "primary" : ""}" data-role="startworkout" data-letter="${escapeAttr(key)}" aria-label="Iniciar ${escapeAttr(w.name || "treino " + key)}">${ICONS.playSm}</button></span>`;
+      } else if (isNext) {
+        sideHtml = `<span class="wl-side"><span class="wl-next">Próximo</span></span>`;
+      }
+      const swipeable = !reordering;
+      workoutsHtml += `<div class="wl-swipe${w.isRest ? " rest" : ""}" data-letter="${escapeAttr(key)}"${swipeable ? ' data-swipe="1"' : ""}>
+        ${
+          swipeable
+            ? `<button type="button" class="wl-swipe-action edit" data-role="swipeedit" data-letter="${escapeAttr(key)}" tabindex="-1" aria-label="Editar ${escapeAttr(w.name || key)}">${ICONS.pencil}<span>Editar</span></button>
+        <button type="button" class="wl-swipe-action delete" data-role="swipedelete" data-letter="${escapeAttr(key)}" tabindex="-1" aria-label="Excluir ${escapeAttr(w.name || key)}"${canDelete ? "" : " disabled"}>${ICONS.trash}<span>Delete</span></button>`
             : ""
         }
-        ${reordering ? "" : doneToday ? `<span class="wl-check">${ICONS.checkSm}</span>` : `<span class="wl-arrow">${ICONS.right}</span>`}
+        <div class="workout-list-card${reordering ? " reordering" : ""}${w.isRest ? " rest" : ""}" data-role="openworkout" data-letter="${escapeAttr(key)}" role="button" tabindex="0">
+          <span class="wl-letter" style="${toneVars(color)}">${w.isRest ? ICONS.moon : escapeHtml(key)}</span>
+          <span class="wl-info">
+            <span class="wl-name">${escapeHtml(w.name)}</span>
+            <span class="wl-meta">${metaTxt}</span>
+            ${tagsHtml}
+          </span>
+          ${sideHtml}
+        </div>
       </div>`;
     });
-    workoutsHtml += `<div class="row-2">
-      <button class="add-workout-btn primary" id="addWorkoutBtn">${ICONS.plus} Novo treino</button>
-      <button class="add-workout-btn" id="addRestBtn">${ICONS.moonSmall} Descanso</button>
+    const cycleTxt = store.data.order.map((k) => (store.data.workouts[k]?.isRest ? "Descanso" : escapeHtml(k))).join(" → ");
+    workoutsHtml += `<div class="wl-footer">
+      <span class="wl-cycle">Ciclo: ${cycleTxt}</span>
+      ${store.data.order.length > 1 ? `<button type="button" class="wl-toolbar-btn${reordering ? " active" : ""}" id="reorderToggleBtn" aria-pressed="${reordering}">${reordering ? "Concluir" : "Reordenar"}</button>` : ""}
+    </div>
+    <p class="wl-swipe-hint">Arraste um treino para a direita para editar ou para a esquerda para excluir.</p>
+    <div class="row-2">
+      <button class="add-workout-btn" id="addRestBtn">${ICONS.moonSmall} Adicionar descanso</button>
     </div>`;
   }
 
   /* -------- histórico -------- */
+  const hmY = store.historyMonth.getFullYear();
+  const hmPrefix = `${hmY}-${String(store.historyMonth.getMonth() + 1).padStart(2, "0")}-`;
+  let hmTrainings = 0;
+  let hmMs = 0;
+  Object.keys(store.data.sessions).forEach((dk) => {
+    const [ky, km] = dk.split("-").map(Number);
+    if (ky !== hmY || km !== store.historyMonth.getMonth() + 1) return;
+    hmTrainings += sessionsFor(dk).filter((s) => !isRestLetter(s.letter)).length;
+    hmMs += totalDurationForDay(dk) || 0;
+  });
+  let hmVolume = 0;
+  forEachLoggedSet((set, dk) => {
+    if (!String(dk).startsWith(hmPrefix) && !sameMonthKey(dk, hmY, store.historyMonth.getMonth() + 1)) return;
+    const wv = parseFloat(set && set.weight);
+    const rv = parseFloat(set && set.reps);
+    if (wv > 0 && rv > 0) hmVolume += wv * rv;
+  });
+  const hmMin = Math.round(hmMs / 60000);
+  const hmTime = hmMin >= 60 ? `${Math.floor(hmMin / 60)}h${String(hmMin % 60).padStart(2, "0")}` : `${hmMin}min`;
+  const hmVol = hmVolume >= 1000 ? `${(hmVolume / 1000).toFixed(hmVolume >= 10000 ? 0 : 1).replace(".", ",")}t` : `${Math.round(hmVolume)}kg`;
+  const historySummaryHtml = `<div class="hist-summary">
+    <div class="hist-sum-card"><span class="hist-sum-label">Treinos</span><span class="hist-sum-num">${hmTrainings}</span></div>
+    <div class="hist-sum-card"><span class="hist-sum-label">Tempo total</span><span class="hist-sum-num">${hmTime}</span></div>
+    <div class="hist-sum-card"><span class="hist-sum-label">Volume</span><span class="hist-sum-num">${hmVol}</span></div>
+  </div>`;
   const legendWorkouts = store.data.order.filter((k) => !store.data.workouts[k]?.isRest);
   const hasRest = store.data.order.some((k) => store.data.workouts[k]?.isRest);
-  let historyHtml = `<div class="card">
+  let historyHtml = `${historySummaryHtml}<div class="card">
     <div class="legend">
       ${legendWorkouts.map((l) => `<div class="legend-item"><span class="legend-dot" style="${toneVars(colorFor(l, store.data.order))}"></span>${l}</div>`).join("")}
       ${hasRest ? `<div class="legend-item"><span class="legend-dot" style="${toneVars(REST_COLOR)}"></span>descanso</div>` : ""}
@@ -682,7 +761,10 @@ export function render() {
   } else if (store.dadosBackupOpen) {
     content = dadosBackupHtml;
   } else if (store.activeTab === "treinos")
-    content = store.treinosView === "edit" ? workoutsHtml : `<h1 class="tab-title">${TAB_TITLES.treinos}</h1>${workoutsHtml}`;
+    content =
+      store.treinosView === "edit"
+        ? workoutsHtml
+        : `<div class="tab-title-row"><h1 class="tab-title">${TAB_TITLES.treinos}</h1><button type="button" class="tab-title-add" id="addWorkoutBtn" aria-label="Novo treino">${ICONS.plus}</button></div>${workoutsHtml}`;
   else if (store.activeTab === "historico") content = `<h1 class="tab-title">${TAB_TITLES.historico}</h1>${historyHtml}`;
   else if (store.activeTab === "progresso") content = `<h1 class="tab-title">${TAB_TITLES.progresso}</h1>${progressHtml}`;
   else if (store.activeTab === "ajustes") content = `<h1 class="tab-title">${TAB_TITLES.ajustes}</h1>${ajustesHtml}`;

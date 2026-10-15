@@ -64,8 +64,8 @@
   --on-ink-text-soft: rgba(255, 255, 255, 0.62);
   --hero-badge-bg: rgba(255, 255, 255, 0.1); /* etiqueta do hero ("Próximo treino") */
   --tabbar-bg: rgba(255, 255, 255, 0.9);
-  --tab-active-bg: #17141c; /* pílula da aba ativa */
-  --tab-active-fg: #ffffff;
+  --tab-active-bg: rgba(255, 90, 54, 0.12); /* pílula da aba ativa (laranja suave) */
+  --tab-active-fg: #e8461f;
 
   /* ---------- estados ---------- */
   --danger: #f0334f;
@@ -153,8 +153,8 @@
     --ink-2: #2a2333;
     --hero-badge-bg: rgba(255, 90, 54, 0.18);
     --tabbar-bg: rgba(29, 24, 36, 0.9);
-    --tab-active-bg: #f6f4f9;
-    --tab-active-fg: #14121a;
+    --tab-active-bg: rgba(255, 90, 54, 0.18);
+    --tab-active-fg: #ff6a45;
     --accent-text: #ff6443;
     --danger-text: #f3576e;
     --shadow-card: none;
@@ -181,8 +181,8 @@
   --ink-2: #2a2333;
   --hero-badge-bg: rgba(255, 90, 54, 0.18);
   --tabbar-bg: rgba(29, 24, 36, 0.9);
-  --tab-active-bg: #f6f4f9;
-  --tab-active-fg: #14121a;
+  --tab-active-bg: rgba(255, 90, 54, 0.18);
+  --tab-active-fg: #ff6a45;
   --accent-text: #ff6443;
   --danger-text: #f3576e;
   --shadow-card: none;
