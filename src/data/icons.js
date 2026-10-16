@@ -11,6 +11,7 @@ export const ICONS = {
   check: lucideSvg(15, "check"),
   checkSm: lucideSvg(13, "check"),
   checkBig: lucideSvg(22, "check"),
+  checkDouble: lucideSvg(12, "checkCheck"),
   pencil: lucideSvg(12, "pencil"),
   plus: lucideSvg(13, "plus"),
   up: lucideSvg(12, "chevronUp"),

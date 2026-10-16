@@ -54,7 +54,7 @@ body {
   line-height: 1.1;
 }
 .greet-hello .accent {
-  color: inherit;
+  color: var(--accent-text);
 }
 .greet-date {
   font-size: 14px;
@@ -282,11 +282,10 @@ body {
   letter-spacing: -0.04em;
   color: var(--text-primary);
 }
-.stat-card-v3.streak .stat-num {
+.stat-card-v3.year .stat-num {
   color: var(--accent-text);
 }
-.stat-card-v3.streak.zero .stat-num,
-.stat-card-v3.streak.zero .stat-mini {
+.stat-card-v3.year.zero .stat-num {
   color: var(--text-muted);
 }
 .stat-card-v3.week .stat-num,
@@ -301,16 +300,6 @@ body {
 }
 
 /* ---------- Home: dias da semana ---------- */
-.week-dot {
-  width: 34px;
-  height: 34px;
-  background: var(--surface-3);
-  border: none;
-}
-.week-dot.today {
-  box-shadow: 0 0 0 2px var(--accent);
-  background: var(--surface);
-}
 .week-dot-label {
   font-size: 12px;
 }

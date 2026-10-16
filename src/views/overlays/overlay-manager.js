@@ -9,6 +9,7 @@ import { renderImportChoiceOverlay } from "./import-choice-overlay.js";
 import { renderExercisePickerOverlay, renderPickerOverlay } from "./picker-overlay.js";
 import { renderPinOverlay } from "../pin-view.js";
 import { renderProgressOverlay } from "./progress-overlay.js";
+import { renderWeekDayOverlay } from "./week-day-overlay.js";
 
 export function openProgressSheet(exId, name) {
   store.overlay = {
@@ -70,6 +71,14 @@ export function openDaySessionsSheet(dateKey) {
   renderOverlay();
 }
 
+export function openWeekDaySheet(dateKey) {
+  store.overlay = {
+    type: "weekDay",
+    dateKey
+  };
+  renderOverlay();
+}
+
 export function closeOverlay() {
   flushAutoSave();
   store.overlay = null;
@@ -88,6 +97,7 @@ function rendererFor(type) {
   if (type === "confirm") return renderConfirmOverlay;
   if (type === "picker") return renderPickerOverlay;
   if (type === "daySessions") return renderDaySessionsOverlay;
+  if (type === "weekDay") return renderWeekDayOverlay;
   if (type === "exercisePicker") return renderExercisePickerOverlay;
   if (type === "body") return renderBodyOverlay;
   if (type === "backups") return renderBackupsOverlay;

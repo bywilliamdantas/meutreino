@@ -23,6 +23,7 @@ import {
   sessionsFor,
   sessionsThisMonth,
   sessionsThisWeek,
+  sessionsThisYear,
   totalDays,
   totalDurationForDay
 } from "../workouts/sessions.js";
@@ -76,6 +77,7 @@ export function render() {
   const weeklyGoal = currentWeeklyGoal();
   const total = sessionsThisMonth();
   const thisWeek = sessionsThisWeek();
+  const yearTotal = sessionsThisYear();
   const now = new Date();
   const weekdayLabel = WEEKDAY_FULL[now.getDay()];
   const heroKey = hasActive ? a.letter : todayCount ? todayArr[todayArr.length - 1].letter : next;
@@ -177,10 +179,10 @@ export function render() {
     ${heroSecondaryRowHtml}
   </div>`;
   const statsRowHtml = `<div class="stats-row-v3">
-    <div class="stat-card-v3 streak${streak === 0 ? " zero" : ""}">
+    <div class="stat-card-v3 year${yearTotal === 0 ? " zero" : ""}">
       <span class="stat-mini">${ICONS.flame}</span>
-      <span class="stat-num" data-count="${streak}">0</span>
-      <span class="stat-label">${streak === 1 ? "semana seguida" : "semanas seguidas"}</span>
+      <span class="stat-num" data-count="${yearTotal}">0</span>
+      <span class="stat-label">Treinos Este Ano</span>
     </div>
     <div class="stat-card-v3 week">
       <span class="stat-mini">${ICONS.calendarSmall}</span>
@@ -200,14 +202,14 @@ export function render() {
   const greetHtml = `<div class="greet-row">
     <div>
       <div class="greet-date">${dateLabel}</div>
-      <div class="greet-hello">${greetWord} ${escapeHtml(firstName)}</div>
+      <div class="greet-hello">${greetWord} <span class="accent">${escapeHtml(firstName)}</span></div>
     </div>
     <div class="greet-actions">
       <button type="button" class="greet-bell" id="greetBellBtn" aria-label="Lembretes">${ICONS.bell}</button>
       <button type="button" class="greet-avatar" id="openPerfilBtn" aria-label="Abrir perfil">${avatarInnerHtml()}</button>
     </div>
   </div>`;
-  const weekDayShort = ["D", "S", "T", "Q", "Q", "S", "S"];
+  const weekDayShort = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
   const wOffset = store.data.settings.weekStartsMonday ? (now.getDay() === 0 ? 6 : now.getDay() - 1) : now.getDay();
   const weekStart = new Date(now);
   weekStart.setDate(now.getDate() - wOffset);
@@ -226,11 +228,21 @@ export function render() {
     const idx = store.data.settings.weekStartsMonday ? (i + 1) % 7 : i;
     const doneEntry = done ? dArr.filter((s) => !isRestLetter(s.letter)).pop() : null;
     const doneLetter = doneEntry && doneEntry.letter;
-    const dotStyle = doneLetter && store.data.workouts[doneLetter] ? ` style="${toneVars(colorFor(doneLetter, store.data.order))}"` : "";
-    const dotInner = done ? escapeHtml(doneLetter || "✓") : restOnly ? ICONS.moonSmall : isToday ? String(d.getDate()) : "";
+    const dayStyle = doneLetter && store.data.workouts[doneLetter] ? ` style="${toneVars(colorFor(doneLetter, store.data.order))}"` : "";
+    const cls = `week-day${done ? " done" : ""}${restOnly ? " rest" : ""}${isToday ? " today" : ""}`;
+    const mark = done
+      ? `<span class="week-day-mark" aria-hidden="true">${ICONS.checkDouble}</span>`
+      : restOnly
+        ? `<span class="week-day-mark" aria-hidden="true">${ICONS.moonSmall}</span>`
+        : "";
+    const main = `<span class="week-day-main">${done ? `<span class="week-day-letter">${escapeHtml(doneLetter || "✓")}</span>` : ""}<span class="week-day-num">${d.getDate()}</span></span>`;
+    const label = `${WEEKDAY_FULL[d.getDay()]}, ${d.getDate()}${done ? ` — ${store.data.workouts[doneLetter]?.name || workoutLabel(doneLetter)}, concluído` : restOnly ? " — descanso" : ""}`;
+    const tile = done
+      ? `<button type="button" class="${cls}"${dayStyle} data-role="weekdaydetail" data-datekey="${dk}" aria-label="${escapeAttr(label)}">${mark}${main}</button>`
+      : `<div class="${cls}"${dayStyle} role="img" aria-label="${escapeAttr(label)}">${mark}${main}</div>`;
     weekDotsHtml += `<div class="week-dot-col">
-      <span class="week-dot ${done ? "done" : ""} ${restOnly ? "rest" : ""} ${isToday ? "today" : ""}"${dotStyle}>${dotInner}</span>
       <span class="week-dot-label">${weekDayShort[idx]}</span>
+      ${tile}
     </div>`;
   }
   weekDotsHtml += `</div></div>`;

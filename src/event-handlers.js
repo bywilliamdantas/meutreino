@@ -24,6 +24,7 @@ import { undoToday } from "./views/overlays/day-overlay.js";
 import {
   openConfirm,
   openDaySessionsSheet,
+  openWeekDaySheet,
   openExercisePicker,
   openImportChoice,
   openProgressSheet,
@@ -266,6 +267,12 @@ export function attachHandlers() {
       const arr = sessionsFor(dk);
       if (arr.length >= 2) openDaySessionsSheet(dk);
       else openDaySheet(dk);
+    });
+  });
+  document.querySelectorAll('[data-role="weekdaydetail"]').forEach((el) => {
+    el.addEventListener("click", () => {
+      haptic(6);
+      openWeekDaySheet(el.dataset.datekey);
     });
   });
   document.querySelectorAll('[data-role="togglesection"]').forEach((el) => {

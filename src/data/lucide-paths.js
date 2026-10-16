@@ -6,6 +6,7 @@
 export const LUCIDE = {
   x: `<path d="M18 6 6 18"/><path d="m6 6 12 12"/>`,
   check: `<path d="M20 6 9 17l-5-5"/>`,
+  checkCheck: `<path d="M18 6 7 17l-5-5"/><path d="m22 10-7.5 7.5L13 16"/>`,
   pencil: `<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>`,
   plus: `<path d="M5 12h14"/><path d="M12 5v14"/>`,
   chevronUp: `<path d="m18 15-6-6-6 6"/>`,

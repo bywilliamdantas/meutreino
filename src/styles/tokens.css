@@ -120,6 +120,8 @@
   --violet-soft: rgba(124, 92, 252, 0.12);
   --violet-border: rgba(124, 92, 252, 0.28);
   --gold: #ffb020;
+  --gold-trophy: #e8b923; /* dourado do troféu (card "treinos no mês") */
+  --fire: #ff7a00; /* laranja-fogo da chama (card "treinos este ano") */
 
   /* ---------- sombras ---------- */
   --shadow-card: 0 1px 2px rgba(20, 18, 26, 0.04);

@@ -3,6 +3,7 @@ import { refreshBackupInfo, takeAutoBackup } from "./backup/auto-backup.js";
 import { requestPersistentStorage } from "./backup/storage-status.js";
 import { initAudioUnlock } from "./audio/beep.js";
 import { storageKey } from "./config.js";
+import { precacheExerciseImages } from "./exercises/image-cache.js";
 import { loadData, persist, persistOnHide, storageAvailable } from "./persistence.js";
 import { checkReminder } from "./reminders.js";
 import { getTabFromHash, initRouter } from "./router.js";
@@ -18,6 +19,14 @@ import { renderLogin } from "./views/login-view.js";
 import { renderRestTimer } from "./views/overlays/rest-timer.js";
 import { render } from "./views/render.js";
 import { renderHeroClock, syncWakeLock } from "./workouts/active-session.js";
+
+/* Baixa as fotos dos exercícios para o cache offline (no primeiro acesso após o login e, depois,
+   só o que faltar). Roda em segundo plano, sem segurar a tela. */
+function startImagePrecache() {
+  precacheExerciseImages().then((r) => {
+    if (r && r.downloaded > 0 && r.failed === 0 && r.cached === 0) showToast("Imagens dos exercícios salvas para uso offline");
+  });
+}
 
 /* ============================================================
    BOOT
@@ -35,6 +44,7 @@ export async function bootApp() {
   await takeAutoBackup(false);
   render();
   requestPersistentStorage();
+  startImagePrecache();
   if (store.data.settings.restTimerActive) {
     if (store.data.settings.restTimerActive.endsAt <= Date.now()) {
       store.data.settings.restTimerActive = null;

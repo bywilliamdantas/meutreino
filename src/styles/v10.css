@@ -130,8 +130,7 @@
   border-radius: var(--r-card);
   box-shadow: var(--shadow-card);
 }
-.stat-card-v3 .stat-mini,
-.stat-card-v3.streak .stat-mini {
+.stat-card-v3 .stat-mini {
   position: static;
   order: -1;
   width: 22px;
@@ -139,12 +138,16 @@
   margin-bottom: 8px;
   background: none;
   color: var(--accent);
+  opacity: 1;
+}
+.stat-card-v3.year .stat-mini {
+  color: var(--fire);
 }
 .stat-card-v3.week .stat-mini {
   color: var(--cat-back);
 }
 .stat-card-v3.month .stat-mini {
-  color: var(--ok);
+  color: var(--gold-trophy);
 }
 .stat-card-v3 .stat-mini svg {
   width: 20px;
@@ -199,38 +202,6 @@
 }
 .week-dot-col {
   gap: 6px;
-}
-.week-dot,
-.week-dot.done,
-.week-dot.rest,
-.week-dot.today {
-  width: 36px;
-  height: 36px;
-  border-radius: 11px;
-  border: none;
-  background: var(--surface-3);
-  color: var(--text-muted);
-  font-size: 13px;
-  font-weight: 800;
-  display: grid;
-  place-items: center;
-  box-shadow: none;
-}
-.week-dot.done {
-  background: var(--tone, var(--accent));
-  color: var(--white);
-}
-.week-dot.today:not(.done) {
-  background: transparent;
-  box-shadow: inset 0 0 0 2px var(--accent);
-  color: var(--accent-text);
-}
-.week-dot.today.done {
-  box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--accent);
-}
-.week-dot svg {
-  width: 15px;
-  height: 15px;
 }
 .week-dot-label {
   font-size: 12px;
@@ -558,4 +529,213 @@
   .wl-swipe .workout-list-card {
     transition: none;
   }
+}
+
+/* ---------- esta semana: cada dia é um bloco (dia da semana, número, treino e status) ---------- */
+.week-dots {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+.week-dot-col {
+  min-width: 0;
+  gap: 6px;
+}
+.week-day {
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 54px;
+  padding: 18px 2px 6px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  background: var(--surface-3);
+  color: var(--text-muted);
+  font: inherit;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+button.week-day {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.week-day-main {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  max-width: 100%;
+}
+.week-day-num {
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+}
+.week-day-letter {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  background: var(--tone, var(--accent));
+  color: var(--white);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+}
+.week-day.done {
+  background: color-mix(in srgb, var(--tone, var(--accent)) 12%, var(--surface));
+  border-color: color-mix(in srgb, var(--tone, var(--accent)) 45%, transparent);
+}
+/* número na cor do treino (levemente escurecida para ler bem também em tons claros, como o amarelo) */
+.week-day.done .week-day-num {
+  color: color-mix(in srgb, var(--tone, var(--accent)) 72%, var(--text-primary));
+}
+/* visto duplo branco, no canto superior direito, sobre um selo na cor do treino */
+.week-day.done .week-day-mark {
+  position: absolute;
+  top: -5px;
+  right: -4px;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--tone, var(--accent));
+  color: var(--white);
+  box-shadow: 0 0 0 2px var(--surface);
+}
+.week-day.done .week-day-mark svg {
+  width: 11px;
+  height: 11px;
+}
+.week-day.rest .week-day-mark {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: grid;
+  color: var(--text-muted);
+}
+.week-day.rest .week-day-mark svg {
+  width: 12px;
+  height: 12px;
+}
+.week-day.today:not(.done) {
+  background: transparent;
+  box-shadow: inset 0 0 0 2px var(--accent);
+  color: var(--accent-text);
+}
+.week-day.today.done {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+.week-day:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+@media (max-width: 340px) {
+  .week-dots {
+    gap: 2px;
+  }
+  .week-day-letter {
+    width: 16px;
+    height: 16px;
+    font-size: 12px;
+  }
+  .week-day-num {
+    font-size: 12px;
+  }
+}
+
+/* ---------- detalhes do treino (somente leitura) ---------- */
+.wd-session + .wd-session {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--divider);
+}
+.wd-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.wd-name {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+.wd-exercises,
+.wd-sets {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.wd-exercises {
+  display: grid;
+  gap: 10px;
+}
+.wd-ex {
+  padding: 12px;
+  border-radius: var(--r-md);
+  background: var(--surface-3);
+  border: 1px solid var(--card-border);
+}
+.wd-ex-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.wd-ex-name {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.wd-set {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+.wd-set-num {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text-muted);
+}
+.wd-set-val {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.wd-set-tag {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.wd-set-pr {
+  color: var(--gold-trophy);
+  display: inline-flex;
+}
+.wd-set-pr svg {
+  width: 14px;
+  height: 14px;
+}
+.wd-ex-extra,
+.wd-note {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.week-day-sheet .sheet-date,
+.week-day-sheet .ssh-date {
+  text-transform: none;
 }

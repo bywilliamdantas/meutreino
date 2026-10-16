@@ -145,6 +145,16 @@ export function sessionsThisMonth() {
   return c;
 }
 
+/* Treinos (descanso não conta) registrados no ano corrente. */
+export function sessionsThisYear() {
+  const y = new Date().getFullYear();
+  let c = 0;
+  for (const key of Object.keys(store.data.sessions)) {
+    if (Number(key.split("-")[0]) === y) c += sessionsFor(key).filter((s) => !isRestLetter(s.letter)).length;
+  }
+  return c;
+}
+
 export function sessionsThisWeek() {
   return weekSessionCount({
     sessions: store.data.sessions,

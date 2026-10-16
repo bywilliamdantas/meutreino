@@ -222,7 +222,7 @@
   line-height: 1;
   letter-spacing: -0.02em;
 }
-.stat-card-v3.streak .stat-num {
+.stat-card-v3.year .stat-num {
   color: var(--accent-text);
 }
 .stat-card-v3.week .stat-num {
@@ -245,8 +245,8 @@
   color: var(--text-muted);
   opacity: 0.5;
 }
-.stat-card-v3.streak .stat-mini {
-  color: var(--accent);
+.stat-card-v3.year .stat-mini {
+  color: var(--fire);
   opacity: 0.85;
 }
 
@@ -272,26 +272,6 @@
   font-size: 12px;
   color: var(--text-muted);
   font-weight: 600;
-}
-.week-dot {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: var(--surface-3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--ok);
-  border: 1.5px solid transparent;
-}
-.week-dot.done {
-  background: var(--ok-bg);
-}
-.week-dot.rest {
-  color: var(--text-muted);
-}
-.week-dot.today {
-  border-color: var(--accent);
 }
 
 .last-record-card {
