@@ -182,17 +182,17 @@ export function render() {
     <div class="stat-card-v3 year${yearTotal === 0 ? " zero" : ""}">
       <span class="stat-mini">${ICONS.flame}</span>
       <span class="stat-num" data-count="${yearTotal}">0</span>
-      <span class="stat-label">Treinos Este Ano</span>
+      <span class="stat-label">Este Ano</span>
     </div>
     <div class="stat-card-v3 week">
       <span class="stat-mini">${ICONS.calendarSmall}</span>
       <span class="stat-num"><span data-count="${thisWeek}">0</span><span class="stat-of">/${weeklyGoal}</span></span>
-      <span class="stat-label">nesta semana</span>
+      <span class="stat-label">Nesta Semana</span>
     </div>
     <div class="stat-card-v3 month">
       <span class="stat-mini">${ICONS.trophy}</span>
       <span class="stat-num" data-count="${total}">0</span>
-      <span class="stat-label">${total === 1 ? "treino no mês" : "treinos no mês"}</span>
+      <span class="stat-label">${total === 1 ? "Este Mês" : "Este Mês"}</span>
     </div>
   </div>`;
   const hour = now.getHours();
