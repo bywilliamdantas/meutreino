@@ -5,6 +5,14 @@
 // detectam qualquer diferença (veja refreshAssets e o marcador de pendência).
 const CACHE_NAME = "meus-treinos-__APP_VERSION__";
 
+// Fotos dos exercícios: cache À PARTE e SEM versão no nome, para sobreviver às atualizações do app
+// (o app baixa tudo logo após o login — src/exercises/image-cache.js — e aqui elas saem do cache,
+// sem rede). Mantenha o nome igual ao de IMAGE_CACHE_NAME naquele arquivo.
+const IMAGE_CACHE = "meus-treinos-exercise-images-v1";
+const IMAGE_HOSTS = ["cdn.jsdelivr.net"];
+const isExerciseImage = (url) =>
+  url.pathname.includes("/exercise-images/") || (url.pathname.includes("/free-exercise-db") && IMAGE_HOSTS.includes(url.hostname));
+
 // Sem estes o app não funciona: se falharem, a instalação é abortada.
 // app.js e app.css agora são gerados pelo build (Vite) a partir de src/, mas o
 // nome de saída é fixo (sem hash), então esta lista continua igual depois de builds futuros.
@@ -62,7 +70,7 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil((async () => {
     const keys = await caches.keys();
-    await Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)));
+    await Promise.all(keys.filter((k) => k !== CACHE_NAME && k !== IMAGE_CACHE).map((k) => caches.delete(k)));
     await self.clients.claim();
   })());
 });
@@ -137,6 +145,10 @@ self.addEventListener("notificationclick", (event) => {
 self.addEventListener("fetch", (event) => {
   if(event.request.method !== "GET") return;
   const url = new URL(event.request.url);
+  if(isExerciseImage(url) && (url.origin === location.origin || IMAGE_HOSTS.includes(url.hostname))){
+    event.respondWith(exerciseImage(event.request));
+    return;
+  }
   if(url.origin !== location.origin) return;
   if(NETWORK_FIRST_FILES.some((f) => url.pathname.endsWith("/" + f))){
     event.respondWith(networkFirst(event.request));
@@ -203,6 +215,24 @@ async function staleWhileRevalidate(request, background){
     }
   } catch(e){
     background();
+    return Response.error();
+  }
+}
+
+/* ---------- fotos dos exercícios: cache primeiro; o que faltar é baixado e guardado ---------- */
+async function exerciseImage(request){
+  const cache = await caches.open(IMAGE_CACHE);
+  const hit = await cache.match(request.url);
+  if(hit) return hit;
+  try {
+    // pedido "cors" para poder conferir status/tipo antes de guardar (um <img> comum chega como no-cors/opaco)
+    const res = await fetch(request.url, { mode: "cors", credentials: "omit" });
+    const type = (res.headers && res.headers.get("content-type")) || "";
+    if(res.ok && /^image\//i.test(type)){
+      cache.put(request.url, res.clone()).catch(() => {});
+    }
+    return res;
+  } catch(e){
     return Response.error();
   }
 }

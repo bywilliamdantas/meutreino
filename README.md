@@ -270,6 +270,12 @@ A ilustração do logo (`src/icons-svg.js`) e os PNGs não são do Lucide.
 
 ## Novidades desta versão
 
+### v10.2 — Offline, semana e detalhes
+- Imagens dos exercícios baixadas automaticamente após o login e guardadas em cache próprio (`meus-treinos-exercise-images-v1`, não apagado nas atualizações): aparecem offline e não são baixadas de novo.
+- "Esta semana": dia da semana em todos os dias, número do dia ao lado da letra (na cor do treino), visto duplo branco nos dias concluídos e lua + data nos dias de descanso.
+- Tocar num dia concluído abre os detalhes do treino (somente leitura).
+- Nome do usuário em laranja na saudação; troféu dourado; card "Treinos Este Ano" com chama laranja.
+
 ### v10.1 — Imagens dos exercícios
 - Cache do app atualizado para `meus-treinos-v10.1.0`.
 - No painel do treino, a foto do exercício substitui o ícone (caixa 56×40, `object-fit: contain`, sem cortar nem distorcer). Tocar na foto abre um modal por cima do treino com as duas posições (início e fim); fecha pelo ✕, tocando fora, ou com Esc — sem fechar nem alterar o treino em andamento.

@@ -1,6 +1,6 @@
 {
   "name": "meus-treinos",
-  "version": "10.1.0",
+  "version": "10.2.0",
   "description": "App para organizar treinos A/B/C, ciclo automático e histórico. PWA instalável no iPhone.",
   "private": true,
   "type": "module",
