@@ -15,7 +15,15 @@ import { fmtClock, fmtDuration, fmtW, fromDisp, toDisp, todayKey, unit, weightSt
 import { newSessionId } from "../../utils/ids.js";
 import { isCardio, isWork, parseNum, roundToStep } from "../../utils/numbers.js";
 import { activeElapsedMs, syncWakeLock } from "../../workouts/active-session.js";
-import { describeIntensity, intensityBaseline, sessionDurationMs, sessionHasData, sessionIntensityDetail, sessionsFor, stampSnapshot } from "../../workouts/sessions.js";
+import {
+  describeIntensity,
+  intensityBaseline,
+  sessionDurationMs,
+  sessionHasData,
+  sessionIntensityDetail,
+  sessionsFor,
+  stampSnapshot
+} from "../../workouts/sessions.js";
 import { DEFAULT_SETS, previousSetValues, shouldStartRest } from "../../workouts/rest-rules.js";
 import { workoutLabel } from "../../workouts/workouts.js";
 import { render } from "../render.js";
@@ -581,8 +589,15 @@ export function renderDayOverlay(root) {
 
 export function autoSaveOverlay() {
   if (!store.overlay || store.overlay.type !== "day") return;
-  if (store.overlay.mode === "new") return;
-  const { dateKey, sessionId, letter, log, startedAt } = store.overlay;
+  const { dateKey, sessionId, letter, log, startedAt, mode } = store.overlay;
+  /* Treino novo: só grava sozinho se for o treino em andamento de hoje. Assim as séries já feitas
+     sobrevivem a fechar a página/o app (o registro fica "aberto", sem endedAt, e é retomado em
+     "Detalhes"). Registros avulsos de outros dias continuam exigindo "Salvar treino". */
+  if (mode === "new") {
+    const act = store.data.activeSession;
+    const activeHere = (act.state === "running" || act.state === "paused") && dateKey === todayKey() && act.letter === letter;
+    if (!activeHere) return;
+  }
   const arr = sessionsFor(dateKey).slice();
   let sess = arr.find((s) => s.id === sessionId);
   if (!sess) {
@@ -606,6 +621,7 @@ export function autoSaveOverlay() {
   if (!sess.startedAt) sess.startedAt = startedAt;
   stampSnapshot(sess);
   store.data.sessions[dateKey] = arr;
+  if (!store.overlay.sessionId) store.overlay.sessionId = sess.id; // próximas gravações atualizam este mesmo registro
   markSessionsDirty(dateKey);
   persist();
 }

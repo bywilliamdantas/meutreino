@@ -739,3 +739,47 @@ button.week-day {
 .week-day-sheet .ssh-date {
   text-transform: none;
 }
+
+/* ---------- histórico: o calendário do mês usa os mesmos blocos da semana do Início ---------- */
+.cal-grid.cal-grid-week {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+.cal-weekdays {
+  gap: 4px;
+  margin-bottom: 6px;
+}
+.cal-weekdays .week-dot-label {
+  text-align: center;
+}
+.week-day.cal-day {
+  aspect-ratio: auto;
+  transition: transform 0.12s var(--ease);
+}
+button.week-day.cal-day:active {
+  transform: scale(0.94);
+}
+.week-day.cal-day.future {
+  opacity: 0.45;
+  pointer-events: none;
+}
+.week-day.cal-day .cal-badge {
+  position: absolute;
+  top: -5px;
+  left: -4px;
+  background: var(--text-primary);
+  color: var(--surface);
+  font-size: 12px;
+  font-weight: 800;
+  padding: 2px 4px;
+  border-radius: 6px;
+  line-height: 1;
+  pointer-events: none;
+  box-shadow: 0 0 0 2px var(--surface);
+}
+@media (max-width: 340px) {
+  .cal-grid.cal-grid-week,
+  .cal-weekdays {
+    gap: 2px;
+  }
+}

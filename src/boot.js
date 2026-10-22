@@ -16,9 +16,23 @@ import "./ui/exercise-lightbox.js";
 import { showToast } from "./ui/toast.js";
 import { backgroundUpdateCheck, checkForUpdate, reloadOnce } from "./update/sw-update.js";
 import { renderLogin } from "./views/login-view.js";
+import { flushAutoSave } from "./views/overlays/day-overlay.js";
 import { renderRestTimer } from "./views/overlays/rest-timer.js";
 import { render } from "./views/render.js";
 import { renderHeroClock, syncWakeLock } from "./workouts/active-session.js";
+
+/* Grava já o que está na folha do treino (observações têm debounce de 350 ms). */
+function flushPendingOverlay() {
+  try {
+    flushAutoSave();
+  } catch (e) {}
+}
+
+/* Ao esconder/fechar a página: primeiro a folha do treino, depois o núcleo + diário. */
+function saveOnHide() {
+  flushPendingOverlay();
+  persistOnHide();
+}
 
 /* Baixa as fotos dos exercícios para o cache offline (no primeiro acesso após o login e, depois,
    só o que faltar). Roda em segundo plano, sem segurar a tela. */
@@ -80,7 +94,7 @@ export async function bootApp() {
     renderLogin();
   }
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "hidden" && store.currentUser) persistOnHide();
+    if (document.visibilityState === "hidden" && store.currentUser) saveOnHide();
     if (document.visibilityState === "visible" && store.currentUser) {
       enforceSessionExpiry();
       if (!store.currentUser) return;
@@ -103,6 +117,7 @@ export async function bootApp() {
   );
   window.addEventListener("beforeunload", () => {
     if (!store.currentUser) return;
+    flushPendingOverlay();
     if (sessionsMode() === "idb") {
       persistOnHide();
       return;
@@ -113,7 +128,7 @@ export async function bootApp() {
   });
   // no iOS o app costuma ser encerrado sem beforeunload: grava ao esconder
   window.addEventListener("pagehide", () => {
-    if (store.currentUser) persistOnHide();
+    if (store.currentUser) saveOnHide();
   });
   if (window.matchMedia) {
     const mq = window.matchMedia("(prefers-color-scheme: light)");
